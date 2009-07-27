@@ -94,21 +94,23 @@ task_category:
   :call          : Call
   :email         : Email
   :folowup       : Follow-up
-  :lunch         : Lunch
+  :demo          : Demo
   :meeting       : Meeting
-  :money         : Money
-  :presentation  : Presentation
-  :trip          : Trip
+  :support       : Support
+  :document      : Document
+  :administrative: Administrative
+  :other         : Other
 
 task_category_color:
   :call          : lavender
   :email         : paleturquoise
   :folowup       : mistyrose
-  :lunch         : wheat
+  :demo          : wheat
   :meeting       : thistle
-  :money         : lightgreen
-  :presentation  : aquamarine
-  :trip          : skyblue
+  :support       : lightgreen
+  :document      : aquamarine
+  :administrative: skyblue
+  :other         : grey
 
 task_bucket: [
   [ "Overdue" ,            :overdue       ],
