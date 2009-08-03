@@ -52,4 +52,5 @@ Rails::Initializer.run do |config|
   config.action_mailer.default_content_type = "text/plain"
   config.action_mailer.delivery_method = :sendmail
   config.action_mailer.sendmail_settings = { :location  => "/usr/sbin/sendmail", :arguments => "-i -t" }
+  config.action_mailer.default_url_options = { :host => 'fatfree.pccl.info', :port => 3000 }
 end
