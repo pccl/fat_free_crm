@@ -104,6 +104,7 @@ task_category:
   :meeting       : Meeting
   :support       : Support
   :document      : Document
+  :development   : Development
   :administrative: Administrative
   :other         : Other
 
@@ -115,6 +116,7 @@ task_category_color:
   :meeting       : thistle
   :support       : lightgreen
   :document      : aquamarine
+  :development   : saddlebrown
   :administrative: skyblue
   :other         : grey
 
