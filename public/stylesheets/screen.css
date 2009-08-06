@@ -129,6 +129,15 @@ tt {
   font-size: 10px;
   padding: 0px 0px 0px 16px; }
 
+.admin #header {
+  background: #385261; }
+  .admin #header h3 a {
+    background: #385261; }
+  .admin #header #welcome a:hover {
+    background: #385261; }
+.admin #tabs {
+  background: #385261; }
+
 .title {
   border-bottom: 1px gray solid;
   color: #342d7e;
@@ -279,6 +288,9 @@ tt {
 .urgent {
   color: darkred; }
 
+.black {
+  color: black; }
+
 .strip {
   background: gainsboro;
   color: black;
@@ -313,7 +325,7 @@ tt {
     width: 500px; }
   .comment textarea {
     font-size: 11px;
-    height: 30px;
+    height: 110px;
     padding: 3px;
     width: 500px; }
   .comment .gravatar {
@@ -328,7 +340,7 @@ tt {
     color: #666666; }
   .comment dt {
     padding: 0px;
-    margin: 0px 0px 0px 36px; }
+    margin: -10px 0px 0px 36px; }
 
 #paginate {
   float: right;
@@ -338,6 +350,13 @@ tt {
 #paging {
   float: right;
   margin: 7px 5px 0px 0px; }
+
+.confirm {
+  background: #cdfecd;
+  border-left: 10px palegreen solid;
+  font-size: 11px;
+  margin: 0px 0px 6px 0px;
+  padding: 6px; }
 
 .log {
   padding: 8px 0px 0px 0px; }

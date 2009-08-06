@@ -148,6 +148,9 @@
 .urgent {
   color: darkred; }
 
+.black {
+  color: black; }
+
 .strip {
   background: gainsboro;
   color: black;
@@ -182,7 +185,7 @@
     width: 500px; }
   .comment textarea {
     font-size: 11px;
-    height: 30px;
+    height: 110px;
     padding: 3px;
     width: 500px; }
   .comment .gravatar {
@@ -197,7 +200,7 @@
     color: #666666; }
   .comment dt {
     padding: 0px;
-    margin: 0px 0px 0px 36px; }
+    margin: -10px 0px 0px 36px; }
 
 #paginate {
   float: right;
@@ -207,6 +210,13 @@
 #paging {
   float: right;
   margin: 7px 5px 0px 0px; }
+
+.confirm {
+  background: #cdfecd;
+  border-left: 10px palegreen solid;
+  font-size: 11px;
+  margin: 0px 0px 6px 0px;
+  padding: 6px; }
 
 .log {
   padding: 8px 0px 0px 0px; }

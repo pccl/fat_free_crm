@@ -1,5 +1,22 @@
+# Fat Free CRM
+# Copyright (C) 2008-2009 by Michael Dvorkin
+# 
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+# 
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+# 
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#------------------------------------------------------------------------------
+
 # == Schema Information
-# Schema version: 19
+# Schema version: 21
 #
 # Table name: users
 #
@@ -31,24 +48,8 @@
 #  deleted_at        :datetime
 #  created_at        :datetime
 #  updated_at        :datetime
+#  admin             :boolean(1)      not null
 #
-
-# Fat Free CRM
-# Copyright (C) 2008-2009 by Michael Dvorkin
-# 
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-# 
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-# 
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#------------------------------------------------------------------------------
 class User < ActiveRecord::Base
   
   has_one  :avatar, :as => :entity, :dependent => :destroy
@@ -68,7 +69,7 @@ class User < ActiveRecord::Base
     c.session_class = Authentication
     c.validates_uniqueness_of_login_field_options = { :message => "^This username has been already taken." }
     c.validates_uniqueness_of_email_field_options = { :message => "^There is another user with the same email." }
-    c.validates_length_of_password_field_options  = { :minimum => 0, :if => :require_password? }
+    c.validates_length_of_password_field_options  = { :minimum => 0, :allow_blank => true, :if => :require_password? }
     c.ignore_blank_passwords = true
   end
 
@@ -76,8 +77,8 @@ class User < ActiveRecord::Base
   # observer without extra authentication query.
   cattr_accessor :current_user
 
-  # validates_presence_of :username, :message => "^Please specify the username."
-  # validates_presence_of :email,    :message => "^Please specify your email address."
+  validates_presence_of :username, :message => "^Please specify the username."
+  validates_presence_of :email,    :message => "^Please specify your email address."
 
   #----------------------------------------------------------------------------
   def name
@@ -87,6 +88,11 @@ class User < ActiveRecord::Base
   #----------------------------------------------------------------------------
   def full_name
     self.first_name.blank? || self.last_name.blank? ? self.email : "#{self.first_name} #{self.last_name}"
+  end
+
+  #----------------------------------------------------------------------------
+  def suspended?
+    self.suspended_at != nil
   end
 
   #----------------------------------------------------------------------------

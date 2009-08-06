@@ -4,9 +4,58 @@ It does not matter how slowly you go as long as you do not stop.
 First they ignore you, then they laugh at you, then they fight you,
 then you win. –- Mahatma Gandhi
 
+Wed, Aug 5, 2009
+---------------------------------------------------------------------
+- Added confirmation when deleting an user (Admin/Users/Delete).
+
+Tue, Aug 4, 2009
+---------------------------------------------------------------------
+- Upgraded [acts_as_commentable] plugin for Ruby 1.9 compatibility.
+- Updated tab settings to allow Fat Free CRM to run from a subdirectory (thanks, okyada!).
+- Updated [rake crm:settings:load] task to ensure Rails 2.3.3 compatibility.
+- Implemented Admin > [Edit User] form.
+
+Mon, Aug 3, 2009
+---------------------------------------------------------------------
+- Implemented Admin > [Create User] form.
+- Include all application helpers except the ones in /admin/helpers subdirectory (GH #5).
+- Make sure editing assets doesn't change asset owner (LH #79).
+- Implemented [Suspend] and [Reactivate] when managing users.
+- Prevent suspended user from logging in.
+
+Sun, Aug 2, 2009
+---------------------------------------------------------------------
+- Updated authentication to allow creating users with blank passwords.
+
+Sat, Aug 1, 2009
+---------------------------------------------------------------------
+- More work on Admin/Users: added list of users and [Create User] form.
+
+Fri, Jul 31, 2009
+---------------------------------------------------------------------
+- Added [suspended_at] to User model, fixed typo (LH #81).
+
+Thu, Jul 30, 2009
+---------------------------------------------------------------------
+- Fixed ActionMailer password reset issue (thanks, James!).
+- Use truncate() instead of shorten() for multibyte chars (thanks, Dima!).
+- Increased the size of the textarea when adding notes (LH #80).
+
+Wed, Jul 29, 2009
+---------------------------------------------------------------------
+- More work on building the Admin infrastructure.
+
+Tue, Jul 28, 2009
+---------------------------------------------------------------------
+- Building Admin infrastructure.
+
+Mon, Jul 27, 2009
+---------------------------------------------------------------------
+- Dropped open_id related tables, added [admin] flag to [users] table.
+
 Sun, Jul 26, 2009
 ---------------------------------------------------------------------
-- Adding timezone support.
+- Added timezone support.
 
 Fri, Jul 24, 2009
 ---------------------------------------------------------------------

@@ -16,12 +16,12 @@
 #------------------------------------------------------------------------------
 
 class ApplicationController < ActionController::Base
-  helper :all
+  helper(application_helpers)
   helper_method :current_user_session, :current_user
   helper_method :called_from_index_page?, :called_from_landing_page?
 
   filter_parameter_logging :password, :password_confirmation
-  before_filter :set_timezone
+  before_filter :set_context
   before_filter "hook(:app_before_filter, self)"
   after_filter "hook(:app_after_filter, self)"
 
@@ -31,8 +31,9 @@ class ApplicationController < ActionController::Base
 
   private
   #----------------------------------------------------------------------------
-  def set_timezone
+  def set_context
     ActiveSupport::TimeZone[session[:timezone_offset]] if session[:timezone_offset]
+    ActionMailer::Base.default_url_options[:host] = request.host_with_port
   end
 
   #----------------------------------------------------------------------------
@@ -43,6 +44,10 @@ class ApplicationController < ActionController::Base
   #----------------------------------------------------------------------------
   def current_user_session
     @current_user_session ||= Authentication.find
+    if @current_user_session && @current_user_session.record.suspended?
+      @current_user_session = nil
+    end
+    @current_user_session
   end
   
   #----------------------------------------------------------------------------
@@ -53,14 +58,11 @@ class ApplicationController < ActionController::Base
   
   #----------------------------------------------------------------------------
   def require_user
-    if current_user
-      # TODO: add timezone to user profile (f.time_zone_select :time_zone, TimeZone.us_zones)
-      # Time.zone = @current_user.time_zone
-    else
+    unless current_user
       store_location
       flash[:notice] = "You must be logged in to access this page." if request.request_uri != "/"
       redirect_to login_url
-      return false
+      false
     end
   end
 
@@ -70,7 +72,7 @@ class ApplicationController < ActionController::Base
       store_location
       flash[:notice] = "You must be logged out to access this page."
       redirect_to profile_url
-      return false
+      false
     end
   end
   

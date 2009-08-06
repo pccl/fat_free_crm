@@ -1,25 +1,3 @@
-# == Schema Information
-# Schema version: 19
-#
-# Table name: accounts
-#
-#  id               :integer(4)      not null, primary key
-#  uuid             :string(36)
-#  user_id          :integer(4)
-#  assigned_to      :integer(4)
-#  name             :string(64)      default(""), not null
-#  access           :string(8)       default("Private")
-#  website          :string(64)
-#  tall_free_phone  :string(32)
-#  phone            :string(32)
-#  fax              :string(32)
-#  billing_address  :string(255)
-#  shipping_address :string(255)
-#  deleted_at       :datetime
-#  created_at       :datetime
-#  updated_at       :datetime
-#
-
 # Fat Free CRM
 # Copyright (C) 2008-2009 by Michael Dvorkin
 # 
@@ -36,6 +14,28 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #------------------------------------------------------------------------------
+
+# == Schema Information
+# Schema version: 21
+#
+# Table name: accounts
+#
+#  id               :integer(4)      not null, primary key
+#  uuid             :string(36)
+#  user_id          :integer(4)
+#  assigned_to      :integer(4)
+#  name             :string(64)      default(""), not null
+#  access           :string(8)       default("Private")
+#  website          :string(64)
+#  toll_free_phone  :string(32)
+#  phone            :string(32)
+#  fax              :string(32)
+#  billing_address  :string(255)
+#  shipping_address :string(255)
+#  deleted_at       :datetime
+#  created_at       :datetime
+#  updated_at       :datetime
+#
 class Account < ActiveRecord::Base
   belongs_to  :user
   has_many    :account_contacts, :dependent => :destroy
