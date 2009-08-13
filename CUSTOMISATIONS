@@ -1,0 +1,14 @@
+The PCCL custom fork of Fat Free CRM includes several alterations 
+useful to us, which we do not wish to push back into the main
+development branch. 
+
+To date, the customisations include the following:
+
+* config/settings.yml - modified the task_categories
+* config/environment.rb - configured action_mailer.default_url_options
+* app/views/accounts/* - renamed "Phone (toll-free)" labels to "VAT no."
+
+-----------------------------------------------------------------------
+
+Please maintain this list as further customisations are added.
+Drew Neil
