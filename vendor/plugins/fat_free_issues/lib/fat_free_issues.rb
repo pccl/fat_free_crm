@@ -1,12 +1,9 @@
-# FatFreeIssues
+# fat_free_issues.rb
 
-Account.class_eval do
-  include AccountIssueAssociations
-end
+# Extend :account model to add :issues association.
+Account.send(:include, AccountIssueAssociations)
 
 ActivityObserver.instance.send :add_observer!, Issue
 
-# FIXME: This doesn't work! Help!
-#ApplicationController.class_eval do
-  #helper :issues
-#end
+# Add :issues plugin helpers.
+ActionView::Base.send(:include, IssuesHelper)

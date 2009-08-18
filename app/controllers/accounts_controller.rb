@@ -20,7 +20,6 @@ class AccountsController < ApplicationController
   before_filter :set_current_tab, :only => [ :index, :show ]
   before_filter :auto_complete, :only => :auto_complete
   after_filter  :update_recently_viewed, :only => :show
-  helper :issues if defined?(Issue)
 
   # GET /accounts
   # GET /accounts.xml                                             HTML and AJAX
