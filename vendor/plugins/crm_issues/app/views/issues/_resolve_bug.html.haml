@@ -1,0 +1,3 @@
+- if !(bug_ticket = session[:bug_ticket] || params[:bug_ticket]).blank?
+  = button_to "Resolve Bug #{bug_ticket}", { :action => "resolve_bug", :bug_ticket => bug_ticket }, :method => :post, :style => "float: left; margin: 8px 0;"
+

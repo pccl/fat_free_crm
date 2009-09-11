@@ -89,7 +89,7 @@ class IssuesController < ApplicationController
     @issue = Issue.my(@current_user).find(params[:id])
     respond_to do |format|
       if @issue.update_with_account_and_permissions(params)
-        # update_sidebar if called_from_index_page?
+        get_data_for_sidebar if called_from_index_page?
         format.js
       else
         @users = User.except(@current_user).all
@@ -120,7 +120,7 @@ class IssuesController < ApplicationController
       if @issue.save_with_account_and_permissions(params)
         if called_from_index_page?
           @issues = get_issues
-          # update_sidebar 
+          get_data_for_sidebar
         end
         format.js
         format.xml { render :xml => @issue, :status => :created, :location => @issue }
@@ -186,6 +186,7 @@ class IssuesController < ApplicationController
       if issue.status == 0
         issue.update_attribute(:status, 1) 
         count += 1
+        session[:bug_ticket] = nil
       end
     end
     flash[:notice] = count > 0 ?
@@ -230,6 +231,7 @@ class IssuesController < ApplicationController
   def respond_to_destroy(method)
     if method == :ajax
       if called_from_index_page?
+        get_data_for_sidebar
         @issues = get_issues
         if @issues.blank?
           @issues = get_issues(:page => current_page - 1) if current_page > 1

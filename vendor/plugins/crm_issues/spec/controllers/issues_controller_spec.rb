@@ -24,9 +24,11 @@ describe IssuesController do
       response.should render_template("issues/index")
     end
 
-    it "should expose the data for the issues sidebar"
-
-    it "should filter out issues by priority"
+    it "should expose the data for the issues sidebar" do
+      get :index
+      ( assigns[:issue_priority_total].keys - ["low", "minor", "major", "critical", :all] ).should == []
+      assigns[:issue_status_total].keys.should == [0,1,2]
+    end
 
     describe "AJAX pagination" do
       it "should pick up page number from params" do
@@ -252,7 +254,11 @@ describe IssuesController do
         response.should render_template("issues/create")
       end
 
-      it "should get sidebar data if called from issues index" 
+      it "should get sidebar data if called from issues index" do
+        request.env["HTTP_REFERER"] = "http://localhost/issues"
+        xhr :post, :create, :issue => { :name => "Nothing works"}, :account => { :name => "My account" }, :users => %w(1 2 3)
+        assigns(:issue_priority_total).should be_an_instance_of(Hash)
+      end
 
       it "should reload issues to update pagination if called from issues index" do
         request.env["HTTP_REFERER"] = "http://localhost/issues"
@@ -329,7 +335,13 @@ describe IssuesController do
         response.should render_template("issues/update")
       end
 
-      it "should get sidebar data if called from issues index"
+      it "should get sidebar data if called from issues index" do
+        @issue = Factory(:issue, :id => 42)
+
+        request.env["HTTP_REFERER"] = "http://localhost/issues"
+        xhr :put, :update, :id => 42, :issue => { :name => "Nothing works"}, :account => { :name => "My account" }, :users => %w(1 2 3)
+        assigns(:issue_priority_total).should be_an_instance_of(Hash)
+      end
 
       it "should be able to create an account and associate it with updated issue" do
         @issue = Factory(:issue, :id => 42)
@@ -425,7 +437,11 @@ describe IssuesController do
           request.env["HTTP_REFERER"] = "http://localhost/issues"
         end
 
-        it "should get sidebar data"
+        it "should get sidebar data when called from issues index page" do
+          xhr :delete, :destroy, :id => @issue.id
+          assigns(:issue_priority_total).should be_an_instance_of(Hash)
+        end
+
         it "should try previous page and render index action if current page has no issues" do
           session[:issues_current_page] = 42
 
@@ -598,6 +614,8 @@ describe IssuesController do
       @one.reload.status.should == 1
       @two.reload.status.should == 1
       @three.reload.status.should == 1
+      assigns(:bug_ticket).should be_nil
+      session[:bug_ticket].should be_nil
     end
   end
 end
