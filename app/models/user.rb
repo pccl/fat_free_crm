@@ -51,6 +51,11 @@
 #  admin             :boolean(1)      not null
 #
 class User < ActiveRecord::Base
+  attr_protected :admin, :suspended_at
+
+  before_create  :check_if_needs_approval
+  before_destroy :check_if_current_user, :check_if_has_related_assets
+
   has_one     :avatar, :as => :entity, :dependent => :destroy  # Personal avatar.
   has_many    :avatars                                         # As owner who uploaded it, ex. Contact avatar.
   has_many    :comments, :as => :commentable                   # As owner who crated a comment.
@@ -65,7 +70,7 @@ class User < ActiveRecord::Base
   named_scope :except, lambda { |user| { :conditions => "id != #{user.id}" } }
   default_scope :order => "id DESC" # Show newest users first.
 
-  simple_column_search :username, :first_name, :last_name, :escape => lambda { |query| query.gsub(/[^\w\s\-]/, "").strip }
+  simple_column_search :username, :first_name, :last_name, :escape => lambda { |query| query.gsub(/[^\w\s\-\.']/, "").strip }
 
   uses_mysql_uuid
   acts_as_paranoid
@@ -84,8 +89,6 @@ class User < ActiveRecord::Base
   validates_presence_of :username, :message => "^Please specify the username."
   validates_presence_of :email,    :message => "^Please specify your email address."
 
-  before_destroy :check_if_current_user, :check_if_has_related_assets
-
   #----------------------------------------------------------------------------
   def name
     self.first_name.blank? ? self.username : self.first_name
@@ -102,6 +105,11 @@ class User < ActiveRecord::Base
   end
 
   #----------------------------------------------------------------------------
+  def awaits_approval?
+    self.suspended? && self.login_count == 0 && Setting.user_signup == :needs_approval
+  end
+
+  #----------------------------------------------------------------------------
   def preference
     Preference.new(:user => self)
   end
@@ -115,6 +123,12 @@ class User < ActiveRecord::Base
 
 
   private
+
+  # Suspend newly created user if signup requires an approval.
+  #----------------------------------------------------------------------------
+  def check_if_needs_approval
+    self.suspended_at = Time.now if Setting.user_signup == :needs_approval && !self.admin
+  end
 
   # Prevent current user from deleting herself.
   #----------------------------------------------------------------------------

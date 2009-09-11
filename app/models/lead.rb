@@ -52,7 +52,7 @@ class Lead < ActiveRecord::Base
   belongs_to  :user
   belongs_to  :campaign
   belongs_to  :assignee, :class_name => "User", :foreign_key => :assigned_to
-  has_one     :contact
+  has_one     :contact, :dependent => :nullify # On destroy keep the contact, but nullify its lead_id
   has_many    :tasks, :as => :asset, :dependent => :destroy, :order => 'created_at DESC'
   has_many    :activities, :as => :subject, :order => 'created_at DESC'
 
@@ -62,7 +62,7 @@ class Lead < ActiveRecord::Base
   named_scope :created_by, lambda { |user| { :conditions => "user_id = #{user.id}" } }
   named_scope :assigned_to, lambda { |user| { :conditions => "assigned_to = #{user.id}" } }
 
-  simple_column_search :first_name, :last_name, :company, :escape => lambda { |query| query.gsub(/[^\w\s\-]/, "").strip }
+  simple_column_search :first_name, :last_name, :company, :escape => lambda { |query| query.gsub(/[^\w\s\-\.']/, "").strip }
   uses_mysql_uuid
   uses_user_permissions
   acts_as_commentable

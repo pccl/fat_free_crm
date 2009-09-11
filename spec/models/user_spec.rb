@@ -117,7 +117,18 @@ describe User do
       @user.destroy
       @user.preferences.count.should == 0
     end
+  end
 
+  it "should set suspended timestamp upon creation if signups need approval and the user is not an admin" do
+    Setting.stub(:user_signup).and_return(:needs_approval)
+    @user = Factory(:user, :suspended_at => nil)
+    @user.suspended?.should == true
+  end
+
+  it "should not set suspended timestamp upon creation if signups need approval and the user is an admin" do
+    Setting.stub(:user_signup).and_return(:needs_approval)
+    @user = Factory(:user, :admin => true, :suspended_at => nil)
+    @user.suspended?.should == false
   end
 
 end

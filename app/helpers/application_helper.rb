@@ -17,9 +17,13 @@
 
 module ApplicationHelper
 
-  def tabs
-    @current_tab ||= :home
-    Setting[:tabs].each { |tab| tab[:active] = (tab[:text].downcase.to_sym == @current_tab || tab[:url][:controller].to_sym == @current_tab) }
+  def tabs(tabs = FatFreeCRM::Tabs.main)
+    if tabs
+      @current_tab ||= tabs.first[:text].downcase.to_sym # Select first tab by default.
+      tabs.each { |tab| tab[:active] = (tab[:text].downcase.to_sym == @current_tab || tab[:url][:controller].to_sym == @current_tab) }
+    else
+      raise RuntimeError.new("Tab settings are missing, please run 'rake crm:setup'")
+    end
   end
   
   #----------------------------------------------------------------------------
@@ -187,6 +191,7 @@ module ApplicationHelper
     [ :blog, :linkedin, :facebook, :twitter ].inject([]) do |links, site|
       url = person.send(site)
       unless url.blank?
+        url = "http://" << url unless url.match(/^https?:\/\//)
         links << link_to(image_tag("#{site}.gif", :size => "15x15"), url, :popup => true, :title => "Open #{url} in a new window")
       end
       links
