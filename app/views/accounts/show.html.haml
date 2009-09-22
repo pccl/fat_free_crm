@@ -8,9 +8,6 @@
 
 %div#edit_account{ hidden }
 
-= render :partial => "common/new_comment", :locals => { :commentable => @account }
-= render :partial => "common/comment", :collection => @account.comments
-
 -#-----------------------------------------------------------------------------
 %br
 = inline :create_task, new_task_path, { :class => "subtitle_tools", :related => dom_id(@account) }
@@ -36,3 +33,6 @@
   = render :partial => "opportunities/opportunity", :collection => @account.opportunities
 
 = hook(:show_account_bottom, self)
+
+= render :partial => "common/new_comment", :locals => { :commentable => @account }
+= render :partial => "common/comment", :collection => @account.comments
