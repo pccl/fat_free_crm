@@ -167,7 +167,6 @@ class TasksController < ApplicationController
   #----------------------------------------------------------------------------
   def complete
     @task = Task.tracked_by(@current_user).find(params[:id])
-    @task.calendar = "01/01/2010" if ( @task and @task.bucket == "specific_time")
     @task.update_attributes(:completed_at => Time.now, :completed_by => @current_user.id) if @task
 
     # Make sure bucket's div gets hidden if it's the last completed task in the bucket.
