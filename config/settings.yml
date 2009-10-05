@@ -123,7 +123,7 @@ task_category_color:
   :meeting       : thistle
   :support       : lightgreen
   :document      : aquamarine
-  :development   : saddlebrown
+  :development   : goldenrod
   :administrative: skyblue
   :other         : grey
 
