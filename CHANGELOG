@@ -4,6 +4,113 @@ It does not matter how slowly you go as long as you do not stop.
 First they ignore you, then they laugh at you, then they fight you,
 then you win. –- Mahatma Gandhi
 
+Sat, Oct 31, 2009
+---------------------------------------------------------------------
+- Correctly show opportunity summary when opportunity stage hasn't been specified.
+- Update Campaign summary when creating or deleting related lead or opportunity.
+- Fixed "rake crm:setup" task to be compatible with ruby 1.9.
+
+Fri, Oct 30, 2009
+---------------------------------------------------------------------
+- Introduced Sortable module, more work on I18n.
+
+Sat, Oct 24, 2009
+---------------------------------------------------------------------
+- Allow renaming both main and admin tabs (see config/settings.yml).
+- Refactored gravatars to always show default image if gravatar is missing.
+- Fixed Facebox usage within Admin area.
+- Release 0.9.8a.
+
+Thu, Oct 22, 2009
+---------------------------------------------------------------------
+- Fixed SASS deprecation warnings making it compatible with Heroku again (thanks, Jim!).
+- Refactored Facebox library (again!) to take into account [base_url] setting.
+
+Wed, Oct 21, 2009
+---------------------------------------------------------------------
+- Include modules from "lib/fat_free_crm.rb" so that they're loaded when running rake.
+
+Tue, Oct 20, 2009
+---------------------------------------------------------------------
+- Added Language option stubs to user's profile.
+- Disabled tab highlighting when showing user's profile.
+
+Sun, Oct 18, 2009
+---------------------------------------------------------------------
+- Merged localization commits onto i18n branch (thanks, Lana!)
+
+Wed, Oct 14, 2009
+---------------------------------------------------------------------
+- Make sure opportunity name does not exceed 64 characters (thanks, Rit!)
+- Changed required Rails version to v2.3.4
+- Updated model annotations for schema version #023.
+- Release 0.9.8.
+
+Sun, Oct 11, 2009
+---------------------------------------------------------------------
+- Added full support for deploying Fat Free CRM in subdirectory (see config/settings.yml).
+- Made Facebox library work with the project is deployed in subdirectory.
+
+Sat, Oct 10, 2009
+---------------------------------------------------------------------
+- Happy birthday, Diana!
+- Setting up Apache with the latest Passenger.
+
+Fri, Oct 9, 2009
+---------------------------------------------------------------------
+- Prevent multiple form submissions by pressing [Submit] button twice.
+- Fixed apparent MySQL migration error on Windows/XP.
+
+Wed, Oct 7, 2009
+---------------------------------------------------------------------
+- Moved [uses_user_permission] code from plugin to core library.
+- Added inspector logging.
+
+Mon, Oct 5, 2009
+---------------------------------------------------------------------
+- Added [rake crm:hooks] task that enumerates the hooks (thanks, Eric!)
+
+Sat, Oct 3, 2009
+---------------------------------------------------------------------
+- Removed [uses_mysql_uuid] plugin and deprecated support for UUIDs.
+
+Tue, Sep 29, 2009
+---------------------------------------------------------------------
+- Adjusted activity timestamp to reflect UTC offset (thanks, Andrew!)
+- Allow creating opportunities with non-unique name.
+- Added :auto_complete controller hook.
+
+Sun, Sep 27, 2009
+---------------------------------------------------------------------
+- Added sidebar hooks on asset landing pages.
+- crm_tags: added support for showing tags on asset landing pages.
+
+Sat, Sep 26, 2009
+---------------------------------------------------------------------
+- Added hooks for inline CSS styles and JavaScript epilogue.
+- crm_tags: added JavaScript and CSS stylesheets for tags.
+- crm_tags: make sure tags stay unique when searching.
+
+Thu, Sep 24, 2009
+---------------------------------------------------------------------
+- crm_tags: Made controller methods work with query string that contains tags.
+
+Tue, Sep 22, 2009
+---------------------------------------------------------------------
+- crm_tags: Proof of concept of combining query string with hash-prefixed tags.
+
+Mon, Sep 21, 2009
+---------------------------------------------------------------------
+- Added hooks to model view partials.
+
+Mon, Sep 21, 2009
+---------------------------------------------------------------------
+- Added hooks to model view partials.
+
+Sun, Sep 20, 2009
+---------------------------------------------------------------------
+- More work on [crm_tags] plugin.
+
 Fri, Sep 18, 2009
 ---------------------------------------------------------------------
 - Merged String#to_url (thanks, Rit!)

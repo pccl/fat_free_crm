@@ -16,12 +16,11 @@
 #------------------------------------------------------------------------------
 
 # == Schema Information
-# Schema version: 21
+# Schema version: 23
 #
 # Table name: campaigns
 #
 #  id                  :integer(4)      not null, primary key
-#  uuid                :string(36)
 #  user_id             :integer(4)
 #  assigned_to         :integer(4)
 #  name                :string(64)      default(""), not null
@@ -55,7 +54,6 @@ class Campaign < ActiveRecord::Base
 
   simple_column_search :name, :match => :middle, :escape => lambda { |query| query.gsub(/[^\w\s\-\.']/, "").strip }
 
-  uses_mysql_uuid
   uses_user_permissions
   acts_as_commentable
   acts_as_paranoid

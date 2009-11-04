@@ -16,12 +16,11 @@
 #------------------------------------------------------------------------------
 
 # == Schema Information
-# Schema version: 21
+# Schema version: 23
 #
 # Table name: accounts
 #
 #  id               :integer(4)      not null, primary key
-#  uuid             :string(36)
 #  user_id          :integer(4)
 #  assigned_to      :integer(4)
 #  name             :string(64)      default(""), not null
@@ -51,7 +50,6 @@ class Account < ActiveRecord::Base
 
   simple_column_search :name, :match => :middle, :escape => lambda { |query| query.gsub(/[^\w\s\-\.']/, "").strip }
 
-  uses_mysql_uuid
   uses_user_permissions
   acts_as_commentable
   acts_as_paranoid
@@ -77,7 +75,7 @@ class Account < ActiveRecord::Base
   def location
     return "" unless self[:billing_address]
     location = self[:billing_address].strip.split("\n").last
-    location.gsub(/(^|\s+)\d+(:?\s+|$)/, " ") if location
+    location.gsub(/(^|\s+)\d+(:?\s+|$)/, " ").strip if location
   end
 
   # Class methods.

@@ -16,12 +16,11 @@
 #------------------------------------------------------------------------------
 
 # == Schema Information
-# Schema version: 21
+# Schema version: 23
 #
 # Table name: opportunities
 #
 #  id          :integer(4)      not null, primary key
-#  uuid        :string(36)
 #  user_id     :integer(4)
 #  campaign_id :integer(4)
 #  assigned_to :integer(4)
@@ -55,13 +54,11 @@ class Opportunity < ActiveRecord::Base
 
   simple_column_search :name, :match => :middle, :escape => lambda { |query| query.gsub(/[^\w\s\-\.']/, "").strip }
 
-  uses_mysql_uuid
   uses_user_permissions
   acts_as_commentable
   acts_as_paranoid
 
   validates_presence_of :name, :message => "^Please specify the opportunity name."
-  validates_uniqueness_of :name, :scope => :user_id
   validates_numericality_of [ :probability, :amount, :discount ], :allow_nil => true
   validate :users_for_shared_access
 

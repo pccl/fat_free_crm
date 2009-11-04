@@ -1,10 +1,9 @@
 # == Schema Information
-# Schema version: 21
+# Schema version: 23
 #
 # Table name: opportunities
 #
 #  id          :integer(4)      not null, primary key
-#  uuid        :string(36)
 #  user_id     :integer(4)
 #  campaign_id :integer(4)
 #  assigned_to :integer(4)
@@ -31,6 +30,11 @@ describe Opportunity do
 
   it "should create a new instance given valid attributes" do
     Opportunity.create!(:name => "Opportunity")
+  end
+
+  it "should be possible to create opportunity with the same name" do
+    first  = Factory(:opportunity, :name => "Hello", :user => @current_user)
+    lambda { Factory(:opportunity, :name => "Hello", :user => @current_user) }.should_not raise_error(ActiveRecord::RecordInvalid)
   end
 
 end
