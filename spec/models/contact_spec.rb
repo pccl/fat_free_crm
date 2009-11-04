@@ -1,10 +1,9 @@
 # == Schema Information
-# Schema version: 21
+# Schema version: 23
 #
 # Table name: contacts
 #
 #  id          :integer(4)      not null, primary key
-#  uuid        :string(36)
 #  user_id     :integer(4)
 #  lead_id     :integer(4)
 #  assigned_to :integer(4)
