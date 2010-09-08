@@ -1,5 +1,5 @@
 # Fat Free CRM
-# Copyright (C) 2008-2009 by Michael Dvorkin
+# Copyright (C) 2008-2010 by Michael Dvorkin
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -29,7 +29,7 @@ module FatFreeCRM
           #
           # NOTE: we're deliberately omitting :dependent => :destroy to preserve
           # permissions of deleted objects. This serves two purposes: 1) to be able
-          # to implement Recycly Bin/Restore and 2) to honor permissions when
+          # to implement Recycle Bin/Restore and 2) to honor permissions when
           # displaying "object deleted..." in the activity log.
           #
           has_many :permissions, :as => :asset, :include => :user

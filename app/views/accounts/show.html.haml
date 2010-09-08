@@ -2,9 +2,9 @@
 
 #confirm{ hidden }
 .title_tools#menu
-  = link_to_inline(:edit_account, edit_account_path(@account), :text => "Edit") + " | "
-  = link_to_function("Delete?", confirm_delete(@account))
-.title#edit_account_title= @account.name
+  = link_to_inline(:edit_account, edit_account_path(@account), :text => t(:edit)) + " | "
+  = link_to_function(t(:delete) + '?', confirm_delete(@account))
+.title#edit_account_title= h(@account.name)
 
 %div#edit_account{ hidden }
 
@@ -13,24 +13,24 @@
 = inline :create_task, new_task_path, { :class => "subtitle_tools", :related => dom_id(@account) }
 .subtitle#create_task_title Tasks
 .remote#create_task{ hidden }
+
+= render :partial => "comments/new", :locals => { :commentable => @account }
+= render :partial => "common/timeline", :collection => @timeline
+
+= section(@account, :tasks)
+
 .log#tasks
   = render :partial => "common/tasks"
 
--#-----------------------------------------------------------------------------
-%br
-= inline :create_contact, new_contact_path, { :class => "subtitle_tools", :related => dom_id(@account) }
-.subtitle#create_contact_title Contacts
-.remote#create_contact{ hidden }
+= section(@account, :contacts)
 .list#contacts
   = render :partial => "contacts/contact", :collection => @account.contacts
 
--#-----------------------------------------------------------------------------
-%br
-= inline :create_opportunity, new_opportunity_path, { :class => "subtitle_tools", :related => dom_id(@account) }
-.subtitle#create_opportunity_title Opportunities
-.remote#create_opportunity{ hidden }
+= section(@account, :opportunities)
 .list#opportunities
   = render :partial => "opportunities/opportunity", :collection => @account.opportunities
+
+= load_select_popups_for(@account, :tasks, :contacts, :opportunities)
 
 = hook(:show_account_bottom, self)
 

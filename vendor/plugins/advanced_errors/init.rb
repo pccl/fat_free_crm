@@ -1,1 +1,1 @@
-rails/init.rb
+require 'advanced_errors'

@@ -1,6 +1,10 @@
-- view ||= controller.controller_name
+- view   ||= controller.controller_name
 - action ||= controller.action_name
+- sidebar = "#{view}/sidebar_#{action}"
+- sidebar = "admin/#{sidebar}" if controller.class.to_s.starts_with?("Admin::")
 
 = yield(:sidebar)
-= render(:partial => "#{view}/sidebar_#{action}") rescue nil
+- begin
+  = render :partial => sidebar
+  - rescue MissingTemplate
 = render :partial => "common/recently"

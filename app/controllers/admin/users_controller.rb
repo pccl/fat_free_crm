@@ -1,5 +1,5 @@
 # Fat Free CRM
-# Copyright (C) 2008-2009 by Michael Dvorkin
+# Copyright (C) 2008-2010 by Michael Dvorkin
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -132,7 +132,7 @@ class Admin::UsersController < Admin::ApplicationController
         format.js   # destroy.js.rjs
         format.xml  { head :ok }
       else
-        flash[:warning] = "Couldn't delete the user since #{@user.full_name} has related assets present."
+        flash[:warning] = t(:msg_cant_delete_user, @user.full_name)
         format.js   # destroy.js.rjs
         format.xml  { render :xml => @user.errors, :status => :unprocessable_entity }
       end

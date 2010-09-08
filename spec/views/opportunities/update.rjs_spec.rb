@@ -10,8 +10,8 @@ describe "/opportunities/update.js.rjs" do
     assigns[:users] = [ @current_user ]
     assigns[:account] = @account = Factory(:account)
     assigns[:accounts] = [ @account ]
-    assigns[:stage] = Setting.as_hash(:opportunity_stage)
-    assigns[:opportunity_stage_total] = { :prospecting => 10, :final_review => 1, :won => 2, :all => 20, :analysis => 1, :lost => 0, :presentation => 2, :other => 0, :proposal => 1, :negotiation => 2 }
+    assigns[:stage] = Setting.unroll(:opportunity_stage)
+    assigns[:opportunity_stage_total] = { :prospecting => 1, "Custom" => 1 }
   end
 
   describe "no errors:" do
@@ -126,6 +126,17 @@ describe "/opportunities/update.js.rjs" do
       it "should show disabled accounts dropdown when called from accounts landing page" do
         render "opportunities/update.js.rjs"
         response.should include_text("crm.create_or_select_account(#{@referer =~ /\/accounts\//})")
+      end
+
+      it "should update related campaign sidebar from campaign landing page" do
+        assigns[:campaign] = campaign = Factory(:campaign)
+        request.env["HTTP_REFERER"] = "http://localhost/campaigns/#{campaign.id}"
+        render "opportunities/create.js.rjs"
+
+        response.should have_rjs("sidebar") do |rjs|
+          with_tag("div[class=panel][id=summary]")
+          with_tag("div[class=panel][id=recently]")
+        end
       end
 
       it "should redraw the [edit_opportunity] form and shake it" do

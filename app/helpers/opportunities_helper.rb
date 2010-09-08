@@ -1,5 +1,5 @@
 # Fat Free CRM
-# Copyright (C) 2008-2009 by Michael Dvorkin
+# Copyright (C) 2008-2010 by Michael Dvorkin
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -20,8 +20,8 @@ module OpportunitiesHelper
   # Sidebar checkbox control for filtering opportunities by stage.
   #----------------------------------------------------------------------------
   def opportunity_stage_checbox(stage, count)
-    checked = (session[:filter_by_opportunity_stage] ? session[:filter_by_opportunity_stage].split(",").include?(stage.to_s) : count > 0)
-    check_box_tag("stage[]", stage, checked, :onclick => remote_function(:url => { :action => :filter }, :with => %Q/"stage=" + $$("input[name='stage[]']").findAll(function (el) { return el.checked }).pluck("value")/))
+    checked = (session[:filter_by_opportunity_stage] ? session[:filter_by_opportunity_stage].split(",").include?(stage.to_s) : count.to_i > 0)
+    check_box_tag("stage[]", stage, checked, :id => stage, :onclick => remote_function(:url => { :action => :filter }, :with => %Q/"stage=" + $$("input[name='stage[]']").findAll(function (el) { return el.checked }).pluck("value")/))
   end
 
 end

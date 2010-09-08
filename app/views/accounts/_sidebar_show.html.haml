@@ -1,24 +1,28 @@
 .panel#summary
-  %h4= @account.name
+  %h4= h(@account.name)
   - if @account.website
     %div
-      %b= link_to(truncate(@account.website, :length => 30), @account.website.to_url, :popup => true, :title => "Open #{@account.website} in a new window")
+      %b= link_to(truncate(@account.website, :length => 30), @account.website.to_url, :popup => true, :title => t(:open_in_window, @account.website))
+  - if @account.email.present?
+    %div
+      %b= link_to_email(@account.email, 30)
+
   %div
     - if @account.toll_free_phone
-      == VAT no.: <b>#{@account.toll_free_phone}</b><br />
+      #{t :phone_toll_free}: <b>#{@account.toll_free_phone}</b><br />
 
     - if @account.phone
-      == Phone: <b>#{@account.phone}</b><br />
+      #{t :phone}: <b>#{@account.phone}</b><br />
 
     - if @account.fax
-      == Fax: <b>#{@account.fax}</b><br />
+      #{t :fax}: <b>#{@account.fax}</b><br />
 
-  - if @account.billing_address
-    %b Billing Address
-    %div= @account.billing_address.n2br if @account.billing_address
+  %div= render :partial => "common/address_show", :locals => { :asset => @account, :type => 'billing', :title => :billing_address }
 
-  - if @account.shipping_address && (@account.shipping_address != @account.billing_address)
-    %b Shipping Address
-    %div= @account.shipping_address.n2br if @account.shipping_address
+  %div= render :partial => "common/address_show", :locals => { :asset => @account, :type => 'shipping', :title => :shipping_address }
+
+  - unless @account.background_info.blank?
+    .caption #{t :background_info}
+    = auto_link(simple_format h(@account.background_info))
 
   = hook(:show_account_sidebar_bottom, self, :account => @account)

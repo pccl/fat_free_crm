@@ -1,5 +1,5 @@
 # Fat Free CRM
-# Copyright (C) 2008-2009 by Michael Dvorkin
+# Copyright (C) 2008-2010 by Michael Dvorkin
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -31,10 +31,10 @@ class HomeController < ApplicationController
   # GET /home/options                                                      AJAX
   #----------------------------------------------------------------------------
   def options
-    unless params[:cancel] == "true"
+    unless params[:cancel].true?
       @asset = @current_user.pref[:activity_asset] || "all"
-      @user = @current_user.pref[:activity_user] || "all users"
-      @duration = @current_user.pref[:activity_duration] || "two days"
+      @user = @current_user.pref[:activity_user] || "all_users"
+      @duration = @current_user.pref[:activity_duration] || "two_days"
     end
   end
 
@@ -57,6 +57,22 @@ class HomeController < ApplicationController
     else
       session[params[:id].to_sym] = true
     end
+    render :nothing => true
+  end
+
+  # GET /home/timeline                                                     AJAX
+  #----------------------------------------------------------------------------
+  def timeline
+    unless params[:type].empty?
+      model = params[:type].camelize.constantize
+      item = model.find(params[:id])
+      item.update_attribute(:state, params[:state])
+    else
+      comments, emails = params[:id].split("+")
+      Comment.update_all("state = '#{params[:state]}'", "id IN (#{comments})") unless comments.blank?
+      Email.update_all("state = '#{params[:state]}'", "id IN (#{emails})") unless emails.blank?
+    end
+
     render :nothing => true
   end
 
@@ -111,7 +127,7 @@ class HomeController < ApplicationController
   def activity_duration
     duration = @current_user.pref[:activity_duration]
     if duration
-      words = duration.split # "two weeks" => 2.weeks
+      words = duration.split("_") # "two_weeks" => 2.weeks
       if %w(one two).include?(words.first)
         %w(zero one two).index(words.first).send(words.last)
       end

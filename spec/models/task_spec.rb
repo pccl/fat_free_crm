@@ -1,25 +1,25 @@
 # == Schema Information
-# Schema version: 23
+# Schema version: 27
 #
 # Table name: tasks
 #
-#  id           :integer(4)      not null, primary key
-#  user_id      :integer(4)
-#  assigned_to  :integer(4)
-#  completed_by :integer(4)
-#  name         :string(255)     default(""), not null
-#  asset_id     :integer(4)
-#  asset_type   :string(255)
-#  priority     :string(32)
-#  category     :string(32)
-#  bucket       :string(32)
-#  due_at       :datetime
-#  completed_at :datetime
-#  deleted_at   :datetime
-#  created_at   :datetime
-#  updated_at   :datetime
+#  id              :integer(4)      not null, primary key
+#  user_id         :integer(4)
+#  assigned_to     :integer(4)
+#  completed_by    :integer(4)
+#  name            :string(255)     default(""), not null
+#  asset_id        :integer(4)
+#  asset_type      :string(255)
+#  priority        :string(32)
+#  category        :string(32)
+#  bucket          :string(32)
+#  due_at          :datetime
+#  completed_at    :datetime
+#  deleted_at      :datetime
+#  created_at      :datetime
+#  updated_at      :datetime
+#  background_info :string(255)
 #
-
 require File.expand_path(File.dirname(__FILE__) + '/../spec_helper')
 
 describe Task do
@@ -51,7 +51,7 @@ describe Task do
         task = Factory(:task, :bucket => "specific_time", :calendar => "01/31/2020")
         task.errors.should be_empty
         task.bucket.should == "specific_time"
-        task.due_at.should == Time.zone.parse("01/31/2020")
+        task.due_at.should == Time.parse("2020-01-31")
       end
     end
   end
@@ -94,7 +94,7 @@ describe Task do
       before(:each) do
         adjust_timezone(offset)
       end
-    
+
       it "should update due date based on selected bucket within #{offset ? 'different' : 'current'} timezone" do
         task = Factory(:task, :due_at => Time.now.midnight.tomorrow, :bucket => "due_tomorrow")
         task.update_attributes( { :bucket => "due_this_week" } )
@@ -102,13 +102,13 @@ describe Task do
         task.bucket.should == "due_this_week"
         task.due_at.should == Time.zone.now.end_of_week
       end
-    
+
       it "should update due date if specific calendar date selected within #{offset ? 'different' : 'current'} timezone" do
         task = Factory(:task, :due_at => Time.now.midnight.tomorrow, :bucket => "due_tomorrow")
         task.update_attributes( { :bucket => "specific_time", :calendar => "01/31/2020" } )
         task.errors.should be_empty
         task.bucket.should == "specific_time"
-        task.due_at.should == Time.zone.parse("01/31/2020")
+        task.due_at.should == Time.parse("2020-01-31")
       end
     end
 

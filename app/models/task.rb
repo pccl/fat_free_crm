@@ -1,5 +1,5 @@
 # Fat Free CRM
-# Copyright (C) 2008-2009 by Michael Dvorkin
+# Copyright (C) 2008-2010 by Michael Dvorkin
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -16,25 +16,26 @@
 #------------------------------------------------------------------------------
 
 # == Schema Information
-# Schema version: 23
+# Schema version: 27
 #
 # Table name: tasks
 #
-#  id           :integer(4)      not null, primary key
-#  user_id      :integer(4)
-#  assigned_to  :integer(4)
-#  completed_by :integer(4)
-#  name         :string(255)     default(""), not null
-#  asset_id     :integer(4)
-#  asset_type   :string(255)
-#  priority     :string(32)
-#  category     :string(32)
-#  bucket       :string(32)
-#  due_at       :datetime
-#  completed_at :datetime
-#  deleted_at   :datetime
-#  created_at   :datetime
-#  updated_at   :datetime
+#  id              :integer(4)      not null, primary key
+#  user_id         :integer(4)
+#  assigned_to     :integer(4)
+#  completed_by    :integer(4)
+#  name            :string(255)     default(""), not null
+#  asset_id        :integer(4)
+#  asset_type      :string(255)
+#  priority        :string(32)
+#  category        :string(32)
+#  bucket          :string(32)
+#  due_at          :datetime
+#  completed_at    :datetime
+#  deleted_at      :datetime
+#  created_at      :datetime
+#  updated_at      :datetime
+#  background_info :string(255)
 #
 class Task < ActiveRecord::Base
   attr_accessor :calendar
@@ -45,13 +46,20 @@ class Task < ActiveRecord::Base
   belongs_to  :asset, :polymorphic => true
   has_many    :activities, :as => :subject, :order => 'created_at DESC'
 
-  # Tasks created by the user for herself, or assigned to her by others. That's what we see on Tasks/Pending and Tasks/Completed.
-  named_scope :my, lambda { |user| { :conditions => [ "(user_id = ? AND assigned_to IS NULL) OR assigned_to = ?", user.id, user.id ], :include => :assignee } }
+  # Tasks created by the user for herself, or assigned to her by others. That's
+  # what gets shown on Tasks/Pending and Tasks/Completed pages.
+  named_scope :my, lambda { |user| {
+    :conditions => [ "(user_id = ? AND assigned_to IS NULL) OR assigned_to = ?", user[:user] || user, user[:user] || user ],
+    :order => user[:order] || "name ASC",
+    :limit => user[:limit], # nil selects all records
+    :include => :assignee
+  } }
 
   # Tasks assigned by the user to others. That's what we see on Tasks/Assigned.
   named_scope :assigned_by, lambda { |user| { :conditions => [ "user_id = ? AND assigned_to IS NOT NULL AND assigned_to != ?", user.id, user.id ], :include => :assignee } }
 
-  # Tasks created by the user or assigned to the user, i.e. the union of the two scopes above. That's the tasks the user is allowed to see and track.
+  # Tasks created by the user or assigned to the user, i.e. the union of the two
+  # scopes above. That's the tasks the user is allowed to see and track.
   named_scope :tracked_by, lambda { |user| { :conditions => [ "user_id = ? OR assigned_to = ?", user.id, user.id ], :include => :assignee } }
 
   # Status based scopes to be combined with the due date and completion time.
@@ -62,8 +70,8 @@ class Task < ActiveRecord::Base
   # Due date scopes.
   named_scope :due_asap,      :conditions => "due_at IS NULL AND bucket = 'due_asap'", :order => "id DESC"
   named_scope :overdue,       lambda { { :conditions => [ "due_at IS NOT NULL AND due_at < ?", Time.zone.now.midnight.utc ], :order => "id DESC" } }
-  named_scope :due_today,     lambda { { :conditions => [ "due_at = ?", Time.zone.now.midnight.utc ], :order => "id DESC" } }
-  named_scope :due_tomorrow,  lambda { { :conditions => [ "due_at = ?", Time.zone.now.midnight.tomorrow.utc ], :order => "id DESC" } }
+  named_scope :due_today,     lambda { { :conditions => [ "due_at >= ? AND due_at < ?", Time.zone.now.midnight.utc, Time.zone.now.midnight.tomorrow.utc ], :order => "id DESC" } }
+  named_scope :due_tomorrow,  lambda { { :conditions => [ "due_at >= ? AND due_at < ?", Time.zone.now.midnight.tomorrow.utc, Time.zone.now.midnight.tomorrow.utc + 1.day ], :order => "id DESC" } }
   named_scope :due_this_week, lambda { { :conditions => [ "due_at >= ? AND due_at < ?", Time.zone.now.midnight.tomorrow.utc + 1.day, Time.zone.now.next_week.utc ], :order => "id DESC" } }
   named_scope :due_next_week, lambda { { :conditions => [ "due_at >= ? AND due_at < ?", Time.zone.now.next_week.utc, Time.zone.now.next_week.end_of_week.utc + 1.day ], :order => "id DESC" } }
   named_scope :due_later,     lambda { { :conditions => [ "(due_at IS NULL AND bucket = 'due_later') OR due_at >= ?", Time.zone.now.next_week.end_of_week.utc + 1.day ], :order => "id DESC" } }
@@ -76,11 +84,12 @@ class Task < ActiveRecord::Base
   named_scope :completed_this_month, lambda { { :conditions => [ "completed_at >= ? AND completed_at < ?", Time.zone.now.beginning_of_month.utc, Time.zone.now.beginning_of_week.utc - 7.days ] } }
   named_scope :completed_last_month, lambda { { :conditions => [ "completed_at >= ? AND completed_at < ?", (Time.zone.now.beginning_of_month.utc - 1.day).beginning_of_month.utc, Time.zone.now.beginning_of_month.utc ] } }
 
+  simple_column_search :name, :match => :middle, :escape => lambda { |query| query.gsub(/[^\w\s\-\.']/, "").strip }
   acts_as_commentable
   acts_as_paranoid
 
-  validates_presence_of :user_id
-  validates_presence_of :name, :message => "^Please specify task name."
+  validates_presence_of :user
+  validates_presence_of :name, :message => :missing_task_name
   validates_presence_of :calendar, :if => "self.bucket == 'specific_time' && !self.completed_at"
   validate              :specific_time, :unless => "self.completed_at"
 
@@ -99,10 +108,24 @@ class Task < ActiveRecord::Base
     self.user == user && assignee && assignee != user
   end
 
+  #----------------------------------------------------------------------------
+  def completed?
+    !!self.completed_at
+  end
+
   # Matcher for the :tracked_by? named scope.
   #----------------------------------------------------------------------------
   def tracked_by?(user)
     self.user == user || self.assignee == user
+  end
+
+  # Check whether the due date has specific time ignoring 23:59:59 timestamp
+  # set by Time.now.end_of_week.
+  #----------------------------------------------------------------------------
+  def at_specific_time?
+    self.due_at &&
+    (self.due_at.hour != 0 || self.due_at.min != 0 || self.due_at.sec != 0) &&
+    (self.due_at.hour != 23 && self.due_at.min != 59 && self.due_at.sec != 59)
   end
 
   # Convert specific due_date to "due_today", "due_tomorrow", etc. bucket name.
@@ -112,9 +135,9 @@ class Task < ActiveRecord::Base
     case
     when self.due_at < Time.zone.now.midnight
       "overdue"
-    when self.due_at == Time.zone.now.midnight
+    when self.due_at >= Time.zone.now.midnight && self.due_at < Time.zone.now.midnight.tomorrow
       "due_today"
-    when self.due_at == Time.zone.now.midnight.tomorrow
+    when self.due_at >= Time.zone.now.midnight.tomorrow && self.due_at < Time.zone.now.midnight.tomorrow + 1.day
       "due_tomorrow"
     when self.due_at >= (Time.zone.now.midnight.tomorrow + 1.day) && self.due_at < Time.zone.now.next_week
       "due_this_week"
@@ -129,7 +152,7 @@ class Task < ActiveRecord::Base
   #----------------------------------------------------------------------------
   def self.find_all_grouped(user, view)
     settings = (view == "completed" ? Setting.task_completed : Setting.task_bucket)
-    settings.inject({}) do |hash, (value, key)|
+    settings.inject({}) do |hash, key|
       hash[key] = (view == "assigned" ? assigned_by(user).send(key).pending : my(user).send(key).send(view))
       hash
     end
@@ -150,7 +173,7 @@ class Task < ActiveRecord::Base
   #----------------------------------------------------------------------------
   def self.totals(user, view = "pending")
     settings = (view == "completed" ? Setting.task_completed : Setting.task_bucket)
-    settings.inject({ :all => 0 }) do |hash, (value, key)|
+    settings.inject({ :all => 0 }) do |hash, key|
       hash[key] = (view == "assigned" ? assigned_by(user).send(key).pending.count : my(user).send(key).send(view).count)
       hash[:all] += hash[key]
       hash
@@ -174,7 +197,7 @@ class Task < ActiveRecord::Base
     when "due_later"
       Time.zone.now.midnight + 100.years
     when "specific_time"
-      self.calendar
+      self.calendar ? Time.parse(self.calendar).utc : nil
     else # due_later or due_asap
       nil
     end
@@ -182,7 +205,6 @@ class Task < ActiveRecord::Base
 
   #----------------------------------------------------------------------------
   def notify_assignee
-    # logger.p self.new_record? ? "create" : "update"
     if self.assigned_to
       # Notify assignee.
     end
@@ -190,9 +212,9 @@ class Task < ActiveRecord::Base
 
   #----------------------------------------------------------------------------
   def specific_time
-    if (self.bucket == "specific_time") && (self.calendar !~ %r[\d{2}/\d{2}/\d{4}])
-      errors.add(:calendar, "^Please specify valid date.")
-    end
+    Time.parse(self.calendar).utc if self.bucket == "specific_time"
+  rescue
+    errors.add(:calendar, :invalid_date)
   end
 
 end

@@ -1,5 +1,5 @@
 # Fat Free CRM
-# Copyright (C) 2008-2009 by Michael Dvorkin
+# Copyright (C) 2008-2010 by Michael Dvorkin
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -34,6 +34,16 @@ class ApplicationController < ActionController::Base
   def set_context
     ActiveSupport::TimeZone[session[:timezone_offset]] if session[:timezone_offset]
     ActionMailer::Base.default_url_options[:host] = request.host_with_port
+    if Setting.locale
+      I18n.locale = Setting.locale
+    else
+      # Pre-I18n settings that need to be reloaded. Use English message text since the actual locale is unknown.
+      raise FatFreeCRM::ObsoleteSettings, <<-OBSOLETE
+        It looks like you are upgrading from the older version of Fat Free CRM. Please review
+        <b>config/settings.yml</b> file, and re-run<br><b>rake crm:settings:load</b> command
+        in development and production environments.
+      OBSOLETE
+    end
   end
 
   #----------------------------------------------------------------------------
@@ -53,6 +63,9 @@ class ApplicationController < ActionController::Base
   #----------------------------------------------------------------------------
   def current_user
     @current_user ||= (current_user_session && current_user_session.record)
+    if @current_user && @current_user.preference[:locale]
+      I18n.locale = @current_user.preference[:locale]
+    end
     User.current_user = @current_user
   end
   
@@ -60,7 +73,7 @@ class ApplicationController < ActionController::Base
   def require_user
     unless current_user
       store_location
-      flash[:notice] = "You must be logged in to access this page." if request.request_uri != "/"
+      flash[:notice] = t(:msg_login_needed) if request.request_uri != "/"
       redirect_to login_url
       false
     end
@@ -70,7 +83,7 @@ class ApplicationController < ActionController::Base
   def require_no_user
     if current_user
       store_location
-      flash[:notice] = "You must be logged out to access this page."
+      flash[:notice] = t(:msg_logout_needed)
       redirect_to profile_url
       false
     end
@@ -123,9 +136,9 @@ class ApplicationController < ActionController::Base
       else self.action_name
     end
     if self.action_name == "show"
-      flash[:warning] = "This #{asset} is no longer available."
+      flash[:warning] = t(:msg_asset_not_available, asset)
     else
-      flash[:warning] = "Can't #{flick} the #{asset} since it's no longer available."
+      flash[:warning] = t(:msg_cant_do, :action => flick, :asset => asset)
     end
     respond_to do |format|
       format.html { redirect_to(:action => :index) }                         if types.include?(:html)
@@ -138,7 +151,7 @@ class ApplicationController < ActionController::Base
   def respond_to_related_not_found(related, *types)
     asset = self.controller_name.singularize
     asset = "note" if asset == "comment"
-    flash[:warning] = "Can't create the #{asset} since the #{related} is no longer available."
+    flash[:warning] = t(:msg_cant_create_related, :asset => asset, :related => related)
     url = send("#{related.pluralize}_path")
     respond_to do |format|
       format.html { redirect_to(url) }                                       if types.include?(:html)
@@ -147,18 +160,52 @@ class ApplicationController < ActionController::Base
     end
   end
 
-  # Autocomplete handler for all core controllers.
+  # Common auto_complete handler for all core controllers.
   #----------------------------------------------------------------------------
   def auto_complete
     @query = params[:auto_complete_query]
     @auto_complete = hook(:auto_complete, self, :query => @query, :user => @current_user)
     if @auto_complete.empty?
-      @auto_complete = self.controller_name.classify.constantize.my(:user => @current_user, :limit => 10).search(@query)
+      @auto_complete = controller_name.classify.constantize.my(:user => @current_user, :limit => 10).search(@query)
     else
       @auto_complete = @auto_complete.last
     end
-    session[:auto_complete] = self.controller_name.to_sym
+    session[:auto_complete] = controller_name.to_sym
     render :template => "common/auto_complete", :layout => nil
+  end
+
+  # Common attach handler for all core controllers.
+  #----------------------------------------------------------------------------
+  def attach
+    model = controller_name.classify.constantize.my(@current_user).find(params[:id])
+    @attachment = params[:assets].classify.constantize.find(params[:asset_id])
+    @attached = model.attach!(@attachment)
+    @campaign = model.reload if model.is_a?(Campaign)
+
+    respond_to do |format|
+      format.js  { render :template => "common/attach" }
+      format.xml { render :xml => model.reload.to_xml }
+    end
+
+  rescue ActiveRecord::RecordNotFound
+    respond_to_not_found(:html, :js, :xml)
+  end
+
+  # Common discard handler for all core controllers.
+  #----------------------------------------------------------------------------
+  def discard
+    model = controller_name.classify.constantize.my(@current_user).find(params[:id])
+    @attachment = params[:attachment].constantize.find(params[:attachment_id])
+    model.discard!(@attachment)
+    @campaign = model.reload if model.is_a?(Campaign)
+
+    respond_to do |format|
+      format.js  { render :template => "common/discard" }
+      format.xml { render :xml => model.reload.to_xml }
+    end
+
+  rescue ActiveRecord::RecordNotFound
+    respond_to_not_found(:html, :js, :xml)
   end
 
   # Proxy current page for any of the controllers by storing it in a session.

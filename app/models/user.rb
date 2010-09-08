@@ -1,5 +1,5 @@
 # Fat Free CRM
-# Copyright (C) 2008-2009 by Michael Dvorkin
+# Copyright (C) 2008-2010 by Michael Dvorkin
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -16,7 +16,7 @@
 #------------------------------------------------------------------------------
 
 # == Schema Information
-# Schema version: 23
+# Schema version: 27
 #
 # Table name: users
 #
@@ -67,7 +67,8 @@ class User < ActiveRecord::Base
   has_many    :activities,  :dependent => :destroy
   has_many    :permissions, :dependent => :destroy
   has_many    :preferences, :dependent => :destroy
-  named_scope :except, lambda { |user| { :conditions => "id != #{user.id}" } }
+  named_scope :except, lambda { |user| { :conditions => [ "id != ? ", user.id ] } }
+  named_scope :by_name, :order => "first_name, last_name, email"
   default_scope :order => "id DESC" # Show newest users first.
 
   simple_column_search :username, :first_name, :last_name, :escape => lambda { |query| query.gsub(/[^\w\s\-\.']/, "").strip }
@@ -75,8 +76,8 @@ class User < ActiveRecord::Base
   acts_as_paranoid
   acts_as_authentic do |c|
     c.session_class = Authentication
-    c.validates_uniqueness_of_login_field_options = { :message => "^This username has been already taken." }
-    c.validates_uniqueness_of_email_field_options = { :message => "^There is another user with the same email." }
+    c.validates_uniqueness_of_login_field_options = { :message => :username_taken }
+    c.validates_uniqueness_of_email_field_options = { :message => :email_in_use }
     c.validates_length_of_password_field_options  = { :minimum => 0, :allow_blank => true, :if => :require_password? }
     c.ignore_blank_passwords = true
   end
@@ -85,8 +86,8 @@ class User < ActiveRecord::Base
   # observer without extra authentication query.
   cattr_accessor :current_user
 
-  validates_presence_of :username, :message => "^Please specify the username."
-  validates_presence_of :email,    :message => "^Please specify your email address."
+  validates_presence_of :username, :message => :missing_username
+  validates_presence_of :email,    :message => :missing_email
 
   #----------------------------------------------------------------------------
   def name

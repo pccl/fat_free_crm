@@ -1,5 +1,5 @@
 # Fat Free CRM
-# Copyright (C) 2008-2009 by Michael Dvorkin
+# Copyright (C) 2008-2010 by Michael Dvorkin
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -16,29 +16,29 @@
 #------------------------------------------------------------------------------
 
 # == Schema Information
-# Schema version: 23
+# Schema version: 27
 #
 # Table name: opportunities
 #
-#  id          :integer(4)      not null, primary key
-#  user_id     :integer(4)
-#  campaign_id :integer(4)
-#  assigned_to :integer(4)
-#  name        :string(64)      default(""), not null
-#  access      :string(8)       default("Private")
-#  source      :string(32)
-#  stage       :string(32)
-#  probability :integer(4)
-#  amount      :decimal(12, 2)
-#  discount    :decimal(12, 2)
-#  closes_on   :date
-#  deleted_at  :datetime
-#  created_at  :datetime
-#  updated_at  :datetime
+#  id              :integer(4)      not null, primary key
+#  user_id         :integer(4)
+#  campaign_id     :integer(4)
+#  assigned_to     :integer(4)
+#  name            :string(64)      default(""), not null
+#  access          :string(8)       default("Private")
+#  source          :string(32)
+#  stage           :string(32)
+#  probability     :integer(4)
+#  amount          :decimal(12, 2)
+#  discount        :decimal(12, 2)
+#  closes_on       :date
+#  deleted_at      :datetime
+#  created_at      :datetime
+#  updated_at      :datetime
+#  background_info :string(255)
 #
 class Opportunity < ActiveRecord::Base
   belongs_to  :user
-  belongs_to  :account
   belongs_to  :campaign
   belongs_to  :assignee, :class_name => "User", :foreign_key => :assigned_to
   has_one     :account_opportunity, :dependent => :destroy
@@ -47,39 +47,30 @@ class Opportunity < ActiveRecord::Base
   has_many    :contacts, :through => :contact_opportunities, :uniq => true, :order => "contacts.id DESC"
   has_many    :tasks, :as => :asset, :dependent => :destroy, :order => 'created_at DESC'
   has_many    :activities, :as => :subject, :order => 'created_at DESC'
-
+  has_many    :emails, :as => :mediator
+  
   named_scope :only, lambda { |filters| { :conditions => [ "stage IN (?)" + (filters.delete("other") ? " OR stage IS NULL" : ""), filters ] } }
-  named_scope :created_by, lambda { |user| { :conditions => "user_id = #{user.id}" } }
-  named_scope :assigned_to, lambda { |user| { :conditions => "assigned_to = #{user.id}" } }
+  named_scope :created_by, lambda { |user| { :conditions => ["user_id = ?", user.id ] } }
+  named_scope :assigned_to, lambda { |user| { :conditions => [ "assigned_to = ?" ,user.id ] } }
+  named_scope :not_lost, { :conditions => "opportunities.stage <> 'lost'"}
 
   simple_column_search :name, :match => :middle, :escape => lambda { |query| query.gsub(/[^\w\s\-\.']/, "").strip }
-
   uses_user_permissions
   acts_as_commentable
   acts_as_paranoid
+  sortable :by => [ "name ASC", "amount DESC", "amount*probability DESC", "probability DESC", "closes_on ASC", "created_at DESC", "updated_at DESC" ], :default => "created_at DESC"
 
-  validates_presence_of :name, :message => "^Please specify the opportunity name."
+  validates_presence_of :name, :message => :missing_opportunity_name
   validates_numericality_of [ :probability, :amount, :discount ], :allow_nil => true
   validate :users_for_shared_access
 
   after_create  :increment_opportunities_count
   after_destroy :decrement_opportunities_count
 
-  SORT_BY = {
-    "name"            => "opportunities.name ASC",
-    "amount"          => "opportunities.amount DESC",
-    "weighted amount" => "opportunities.amount * opportunities.probability DESC",
-    "probability"     => "opportunities.probability DESC",
-    "closing date"    => "opportunities.closes_on ASC",
-    "date created"    => "opportunities.created_at DESC",
-    "date updated"    => "opportunities.updated_at DESC"
-  }
-
   # Default values provided through class methods.
   #----------------------------------------------------------------------------
-  def self.per_page ;  20                              ; end
-  def self.outline  ;  "long"                          ; end
-  def self.sort_by  ;  "opportunities.created_at DESC" ; end
+  def self.per_page ; 20     ; end
+  def self.outline  ; "long" ; end
 
   #----------------------------------------------------------------------------
   def weighted_amount
@@ -99,11 +90,33 @@ class Opportunity < ActiveRecord::Base
   # Backend handler for [Update Opportunity] form (see opportunity/update).
   #----------------------------------------------------------------------------
   def update_with_account_and_permissions(params)
-    account = Account.create_or_select_for(self, params[:account], params[:users])
-    self.account_opportunity = AccountOpportunity.new(:account => account, :opportunity => self) unless account.id.blank?
+    if params[:account][:id] == "" || params[:account][:name] == ""
+      self.account = nil # Opportunity is not associated with the account anymore.
+      self.reload
+    else
+      account = Account.create_or_select_for(self, params[:account], params[:users])
+      self.account_opportunity = AccountOpportunity.new(:account => account, :opportunity => self) unless account.id.blank?
+    end
     self.update_with_permissions(params[:opportunity], params[:users])
   end
 
+  # Attach given attachment to the opportunity if it hasn't been attached already.
+  #----------------------------------------------------------------------------
+  def attach!(attachment)
+    unless self.send("#{attachment.class.name.downcase}_ids").include?(attachment.id)
+      self.send(attachment.class.name.tableize) << attachment
+    end
+  end
+
+  # Discard given attachment from the opportunity.
+  #----------------------------------------------------------------------------
+  def discard!(attachment)
+    if attachment.is_a?(Task)
+      attachment.update_attribute(:asset, nil)
+    else # Contacts
+      self.send(attachment.class.name.tableize).delete(attachment)
+    end
+  end
 
   # Class methods.
   #----------------------------------------------------------------------------
@@ -127,7 +140,7 @@ class Opportunity < ActiveRecord::Base
   # Make sure at least one user has been selected if the contact is being shared.
   #----------------------------------------------------------------------------
   def users_for_shared_access
-    errors.add(:access, "^Please specify users to share the opportunity with.") if self[:access] == "Shared" && !self.permissions.any?
+    errors.add(:access, :share_opportunity) if self[:access] == "Shared" && !self.permissions.any?
   end
 
   #----------------------------------------------------------------------------

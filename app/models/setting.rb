@@ -1,5 +1,5 @@
 # Fat Free CRM
-# Copyright (C) 2008-2009 by Michael Dvorkin
+# Copyright (C) 2008-2010 by Michael Dvorkin
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -16,7 +16,7 @@
 #------------------------------------------------------------------------------
 
 # == Schema Information
-# Schema version: 23
+# Schema version: 27
 #
 # Table name: settings
 #
@@ -28,12 +28,11 @@
 #  updated_at    :datetime
 #
 class Setting < ActiveRecord::Base
-  
-  #-------------------------------------------------------------------
+
   def self.method_missing(method, *args)
     begin
       super(method, *args)
-    rescue NoMethodError
+    rescue NoMethodError, NameError # Seems that NameError exception was introduced in Rails 2.3.8
       method_name = method.to_s
       if method_name.last == "="
         self[method_name.sub("=", "")] = args.first
@@ -56,14 +55,12 @@ class Setting < ActiveRecord::Base
     setting.save
   end
 
+  # Unrolls [ :one, :two ] settings array into [[ "One", :one ], [ "Two", :two ]]
+  # picking symbol translations from locale. If setting is not a symbol but
+  # string it gets copied without translation.
   #-------------------------------------------------------------------
-  def self.as_hash(setting)
-    send(setting).inject({}) { |hash, item| hash[item.last] = item.first; hash }
-  end
-
-  #-------------------------------------------------------------------
-  def self.invert(setting)
-    send(setting).invert.sort
+  def self.unroll(setting)
+    send(setting).map { |key| [ key.is_a?(Symbol) ? I18n.t(key) : key, key.to_sym ] }
   end
 
 end

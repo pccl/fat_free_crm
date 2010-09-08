@@ -57,6 +57,7 @@ describe "/leads/update.js.rjs" do
 
     describe "on related asset page -" do
       before(:each) do
+        assigns[:campaign] = Factory(:campaign)
         request.env["HTTP_REFERER"] = "http://localhost/campaigns/123"
       end
 
@@ -68,13 +69,17 @@ describe "/leads/update.js.rjs" do
         response.should include_text(%Q/$("lead_#{@lead.id}").visualEffect("highlight"/)
       end
 
-      it "should update recently viewed items" do
-        render "leads/update.js.rjs"
-        response.should have_rjs("recently") do |rjs|
-          with_tag("div[class=caption]")
+      it "should update campaign sidebar" do
+        assigns[:campaign] = campaign = Factory(:campaign)
+        render "leads/create.js.rjs"
+
+        response.should have_rjs("sidebar") do |rjs|
+          with_tag("div[class=panel][id=summary]")
+          with_tag("div[class=panel][id=recently]")
         end
       end
     end
+
   end # no errors
 
   describe "validation errors :" do

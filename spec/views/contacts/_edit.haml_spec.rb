@@ -40,10 +40,28 @@ describe "/contacts/edit.html.erb" do
 
     render "/contacts/_edit.html.haml"
     response.should have_tag("select[id=contact_assigned_to]") do |options|
-      options.to_s.should include_text(%Q/<option selected="selected" value="#{@user.id}">/)
+      with_tag "option[selected=selected]"
+      with_tag "option[value=#{@user.id}]"
     end
   end
 
+  it "should render background info field if settings require so" do
+    assigns[:users] = [ @current_user ]
+    assigns[:contact] = Factory(:contact)
+    Setting.background_info = [ :contact ]
+
+    render "/contacts/_create.html.haml"
+    response.should have_tag("textarea[id=contact_background_info]")
+  end
+
+  it "should not render background info field if settings do not require so" do
+    assigns[:users] = [ @current_user ]
+    assigns[:contact] = Factory(:contact)
+    Setting.background_info = []
+
+    render "/contacts/_create.html.haml"
+    response.should_not have_tag("textarea[id=contact_background_info]")
+  end
 end
 
 
