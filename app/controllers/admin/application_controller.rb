@@ -1,5 +1,5 @@
 # Fat Free CRM
-# Copyright (C) 2008-2009 by Michael Dvorkin
+# Copyright (C) 2008-2010 by Michael Dvorkin
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -24,7 +24,7 @@ class Admin::ApplicationController < ApplicationController
   def require_admin_user
     require_user
     if @current_user && !@current_user.admin?
-      flash[:notice] = "You must be Administrator to access this page."
+      flash[:notice] = t(:msg_require_admin)
       redirect_to root_path
       false
     end

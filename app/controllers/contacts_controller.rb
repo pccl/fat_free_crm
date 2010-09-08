@@ -1,5 +1,5 @@
 # Fat Free CRM
-# Copyright (C) 2008-2009 by Michael Dvorkin
+# Copyright (C) 2008-2010 by Michael Dvorkin
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -14,10 +14,11 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #------------------------------------------------------------------------------
-
 class ContactsController < ApplicationController
   before_filter :require_user
   before_filter :set_current_tab, :only => [ :index, :show ]
+  before_filter :attach, :only => :attach
+  before_filter :discard, :only => :discard
   before_filter :auto_complete, :only => :auto_complete
   after_filter  :update_recently_viewed, :only => :show
 
@@ -39,8 +40,10 @@ class ContactsController < ApplicationController
   #----------------------------------------------------------------------------
   def show
     @contact = Contact.my(@current_user).find(params[:id])
-    @stage = Setting.as_hash(:opportunity_stage)
+    @stage = Setting.unroll(:opportunity_stage)
     @comment = Comment.new
+    
+    @timeline = Timeline.find(@contact)
 
     respond_to do |format|
       format.html # show.html.erb
@@ -55,7 +58,7 @@ class ContactsController < ApplicationController
   # GET /contacts/new.xml                                                  AJAX
   #----------------------------------------------------------------------------
   def new
-    @contact  = Contact.new(:user => @current_user)
+    @contact  = Contact.new(:user => @current_user, :access => Setting.default_access)
     @account  = Account.new(:user => @current_user)
     @users    = User.except(@current_user).all
     @accounts = Account.my(@current_user).all(:order => "name")
@@ -163,6 +166,20 @@ class ContactsController < ApplicationController
     respond_to_not_found(:html, :js, :xml)
   end
 
+  # PUT /contacts/1/attach
+  # PUT /contacts/1/attach.xml                                             AJAX
+  #----------------------------------------------------------------------------
+  # Handled by before_filter :attach, :only => :attach
+
+  # POST /contacts/1/discard
+  # POST /contacts/1/discard.xml                                           AJAX
+  #----------------------------------------------------------------------------
+  # Handled by before_filter :discard, :only => :discard
+
+  # POST /contacts/auto_complete/query                                     AJAX
+  #----------------------------------------------------------------------------
+  # Handled by before_filter :auto_complete, :only => :auto_complete
+
   # GET /contacts/search/query                                             AJAX
   #----------------------------------------------------------------------------
   def search
@@ -174,18 +191,13 @@ class ContactsController < ApplicationController
     end
   end
 
-  # POST /contacts/auto_complete/query                                     AJAX
-  #----------------------------------------------------------------------------
-  # Handled by before_filter :auto_complete, :only => :auto_complete
-
   # GET /contacts/options                                                  AJAX
   #----------------------------------------------------------------------------
   def options
-    unless params[:cancel] == "true"
+    unless params[:cancel].true?
       @per_page = @current_user.pref[:contacts_per_page] || Contact.per_page
       @outline  = @current_user.pref[:contacts_outline]  || Contact.outline
       @sort_by  = @current_user.pref[:contacts_sort_by]  || Contact.sort_by
-      @sort_by  = Contact::SORT_BY.invert[@sort_by]
       @naming   = @current_user.pref[:contacts_naming]   || Contact.first_name_position
     end
   end
@@ -198,9 +210,9 @@ class ContactsController < ApplicationController
 
     # Sorting and naming only: set the same option for Leads if the hasn't been set yet.
     if params[:sort_by]
-      @current_user.pref[:contacts_sort_by] = Contact::SORT_BY[params[:sort_by]]
-      if Lead::SORT_BY.keys.include?(params[:sort_by])
-        @current_user.pref[:leads_sort_by] ||= Lead::SORT_BY[params[:sort_by]]
+      @current_user.pref[:contacts_sort_by] = Contact::sort_by_map[params[:sort_by]]
+      if Lead::sort_by_fields.include?(params[:sort_by])
+        @current_user.pref[:leads_sort_by] ||= Lead::sort_by_map[params[:sort_by]]
       end
     end
     if params[:naming]
@@ -254,7 +266,7 @@ class ContactsController < ApplicationController
       # At this point render destroy.js.rjs
     else
       self.current_page = 1
-      flash[:notice] = "#{@contact.full_name} has beed deleted."
+      flash[:notice] = t(:msg_asset_deleted, @contact.full_name)
       redirect_to(contacts_path)
     end
   end

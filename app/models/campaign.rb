@@ -1,5 +1,5 @@
 # Fat Free CRM
-# Copyright (C) 2008-2009 by Michael Dvorkin
+# Copyright (C) 2008-2010 by Michael Dvorkin
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -16,7 +16,7 @@
 #------------------------------------------------------------------------------
 
 # == Schema Information
-# Schema version: 23
+# Schema version: 27
 #
 # Table name: campaigns
 #
@@ -39,6 +39,7 @@
 #  deleted_at          :datetime
 #  created_at          :datetime
 #  updated_at          :datetime
+#  background_info     :string(255)
 #
 class Campaign < ActiveRecord::Base
   belongs_to  :user
@@ -47,53 +48,66 @@ class Campaign < ActiveRecord::Base
   has_many    :leads, :dependent => :destroy, :order => "id DESC"
   has_many    :opportunities, :dependent => :destroy, :order => "id DESC"
   has_many    :activities, :as => :subject, :order => 'created_at DESC'
+  has_many    :emails, :as => :mediator
 
   named_scope :only, lambda { |filters| { :conditions => [ "status IN (?)" + (filters.delete("other") ? " OR status IS NULL" : ""), filters ] } }
-  named_scope :created_by, lambda { |user| { :conditions => "user_id = #{user.id}" } }
-  named_scope :assigned_to, lambda { |user| { :conditions => "assigned_to = #{user.id}" } }
+  named_scope :created_by, lambda { |user| { :conditions => [ "user_id = ?" , user.id ] } }
+  named_scope :assigned_to, lambda { |user| { :conditions => [ "assigned_to = ?", user.id ] } }
 
   simple_column_search :name, :match => :middle, :escape => lambda { |query| query.gsub(/[^\w\s\-\.']/, "").strip }
-
   uses_user_permissions
   acts_as_commentable
   acts_as_paranoid
+  sortable :by => [ "name ASC", "target_leads DESC", "target_revenue DESC", "leads_count DESC", "revenue DESC", "starts_on DESC", "ends_on DESC", "created_at DESC", "updated_at DESC" ], :default => "created_at DESC"
 
-  validates_presence_of :name, :message => "^Please specify campaign name."
+  validates_presence_of :name, :message => :missing_campaign_name
   validates_uniqueness_of :name, :scope => :user_id
   validate :start_and_end_dates
   validate :users_for_shared_access
 
-  SORT_BY = {
-    "name"           => "campaigns.name ASC",
-    "target leads"   => "campaigns.target_leads DESC",
-    "target revenue" => "campaigns.target_revenue DESC",
-    "actual leads"   => "campaigns.leads_count DESC",
-    "actual revenue" => "campaigns.revenue DESC",
-    "start date"     => "campaigns.starts_on DESC",
-    "end date"       => "campaigns.ends_on DESC",
-    "date created"   => "campaigns.created_at DESC",
-    "date updated"   => "campaigns.updated_at DESC"
-  }
-
   # Default values provided through class methods.
   #----------------------------------------------------------------------------
-  def self.per_page ;  20                          ; end
-  def self.outline  ;  "long"                      ; end
-  def self.sort_by  ;  "campaigns.created_at DESC" ; end
+  def self.per_page ; 20     ; end
+  def self.outline  ; "long" ; end
+
+  # Attach given attachment to the campaign if it hasn't been attached already.
+  #----------------------------------------------------------------------------
+  def attach!(attachment)
+    unless self.send("#{attachment.class.name.downcase}_ids").include?(attachment.id)
+      if attachment.is_a?(Task)
+        self.send(attachment.class.name.tableize) << attachment
+      else # Leads, Opportunities
+        attachment.update_attribute(:campaign, self)
+        attachment.send("increment_#{attachment.class.name.tableize}_count")
+        [ attachment ]
+      end
+    end
+  end
+
+  # Discard given attachment from the campaign.
+  #----------------------------------------------------------------------------
+  def discard!(attachment)
+    if attachment.is_a?(Task)
+      attachment.update_attribute(:asset, nil)
+    else # Leads, Opportunities
+      attachment.send("decrement_#{attachment.class.name.tableize}_count")
+      attachment.update_attribute(:campaign, nil)
+    end
+  end
 
   private
   # Make sure end date > start date.
   #----------------------------------------------------------------------------
   def start_and_end_dates
     if (self.starts_on && self.ends_on) && (self.starts_on > self.ends_on)
-      errors.add(:ends_on, "^Please make sure the campaign end date is after the start date.")
+      errors.add(:ends_on, :dates_not_in_sequence)
     end
   end
 
   # Make sure at least one user has been selected if the campaign is being shared.
   #----------------------------------------------------------------------------
   def users_for_shared_access
-    errors.add(:access, "^Please specify users to share the campaign with.") if self[:access] == "Shared" && !self.permissions.any?
+    errors.add(:access, :share_campaign) if self[:access] == "Shared" && !self.permissions.any?
   end
 
 end

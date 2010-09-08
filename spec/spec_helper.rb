@@ -1,16 +1,16 @@
 # Fat Free CRM
-# Copyright (C) 2008-2009 by Michael Dvorkin
-# 
+# Copyright (C) 2008-2010 by Michael Dvorkin
+#
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Affero General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http:#www.gnu.org/licenses/>.
 #------------------------------------------------------------------------------
@@ -40,6 +40,14 @@ Spec::Runner.configure do |config|
   config.fixture_path = RAILS_ROOT + '/spec/fixtures/'
 
   config.include(SharedControllerSpecs, :type => :controller)
+
+  config.after(:each, :type => :view) do
+    # detect html-quoted entities in all rendered responses
+    if response && response.body
+      response.body.should_not match /&amp;\S{1,6};/
+    end
+  end
+
   #
   # == Notes
   #
@@ -70,7 +78,7 @@ def login_and_assign(user_stubs = {}, session_stubs = {})
   login(user_stubs, session_stubs)
   assigns[:current_user] = @current_user
 end
- 
+
 #----------------------------------------------------------------------------
 def logout
   @current_user = nil
@@ -78,12 +86,12 @@ def logout
   Authentication.stub!(:find).and_return(nil)
 end
 alias :require_no_user :logout
-  
+
 #----------------------------------------------------------------------------
 def current_user
   @current_user
 end
- 
+
 #----------------------------------------------------------------------------
 def current_user_session
   @current_user_session
@@ -108,7 +116,7 @@ end
 #----------------------------------------------------------------------------
 def stub_task_total(view = "pending")
   settings = (view == "completed" ? Setting.task_completed : Setting.task_bucket)
-  settings.inject({ :all => 0 }) { |hash, (value, key)| hash[key] = 1; hash }
+  settings.inject({ :all => 0 }) { |hash, key| hash[key] = 1; hash }
 end
 
 # Get current server timezone and set it (see rake time:zones:local for details).

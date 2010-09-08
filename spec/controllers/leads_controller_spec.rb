@@ -33,7 +33,7 @@ describe LeadsController do
       @status = Setting.lead_status
 
       get :index
-      (assigns[:lead_status_total].keys - (@status.keys << :all << :other)).should == []
+      (assigns[:lead_status_total].keys - (@status << :all << :other)).should == []
     end
 
     it "should filter out leads by status" do
@@ -358,9 +358,9 @@ describe LeadsController do
     describe "with valid params" do
 
       it "should update the requested lead, expose it as @lead, and render [update] template" do
-        @lead = Factory(:lead, :id => 42, :first_name => "Billy", :user => @current_user)
+        @lead = Factory(:lead, :first_name => "Billy", :user => @current_user)
 
-        xhr :put, :update, :id => 42, :lead => { :first_name => "Bones" }
+        xhr :put, :update, :id => @lead.id, :lead => { :first_name => "Bones" }
         @lead.reload.first_name.should == "Bones"
         assigns[:lead].should == @lead
         assigns[:lead_status_total].should == nil
@@ -368,26 +368,56 @@ describe LeadsController do
       end
 
       it "should update lead status" do
-        @lead = Factory(:lead, :id => 42, :status => "new", :user => @current_user)
+        @lead = Factory(:lead, :status => "new", :user => @current_user)
 
-        xhr :put, :update, :id => 42, :lead => { :status => "rejected" }
+        xhr :put, :update, :id => @lead.id, :lead => { :status => "rejected" }
         @lead.reload.status.should == "rejected"
       end
 
       it "should update lead source" do
-        @lead = Factory(:lead, :id => 42, :source => "campaign", :user => @current_user)
+        @lead = Factory(:lead, :source => "campaign", :user => @current_user)
 
-        xhr :put, :update, :id => 42, :lead => { :source => "cald_call" }
+        xhr :put, :update, :id => @lead.id, :lead => { :source => "cald_call" }
         @lead.reload.source.should == "cald_call"
       end
 
       it "should update lead campaign" do
-        old_campaign = Factory(:campaign)
-        new_campaign = Factory(:campaign)
-        @lead = Factory(:lead, :id => 42, :campaign => old_campaign, :user => @current_user)
+        @campaigns = { :old => Factory(:campaign), :new => Factory(:campaign) }
+        @lead = Factory(:lead, :campaign => @campaigns[:old])
 
-        xhr :put, :update, :id => 42, :lead => { :campaign_id => new_campaign.id }
-        @lead.reload.campaign.should == new_campaign
+        xhr :put, :update, :id => @lead.id, :lead => { :campaign_id => @campaigns[:new].id }
+        @lead.reload.campaign.should == @campaigns[:new]
+      end
+
+      it "should decrement campaign leads count if campaign has been removed" do
+        @campaign = Factory(:campaign)
+        @lead = Factory(:lead, :campaign => @campaign)
+        @count = @campaign.reload.leads_count
+
+        xhr :put, :update, :id => @lead, :lead => { :campaign_id => nil }
+        @lead.reload.campaign.should == nil
+        @campaign.reload.leads_count.should == @count - 1
+      end
+
+      it "should increment campaign leads count if campaign has been assigned" do
+        @campaign = Factory(:campaign)
+        @lead = Factory(:lead, :campaign => nil)
+        @count = @campaign.leads_count
+
+        xhr :put, :update, :id => @lead, :lead => { :campaign_id => @campaign.id }
+        @lead.reload.campaign.should == @campaign
+        @campaign.reload.leads_count.should == @count + 1
+      end
+
+      it "should update both campaign leads counts if reassigned to a new campaign" do
+        @campaigns = { :old => Factory(:campaign), :new => Factory(:campaign) }
+        @lead = Factory(:lead, :campaign => @campaigns[:old])
+        @counts = { :old => @campaigns[:old].reload.leads_count, :new => @campaigns[:new].leads_count }
+
+        xhr :put, :update, :id => @lead, :lead => { :campaign_id => @campaigns[:new].id }
+        @lead.reload.campaign.should == @campaigns[:new]
+        @campaigns[:old].reload.leads_count.should == @counts[:old] - 1
+        @campaigns[:new].reload.leads_count.should == @counts[:new] + 1
       end
 
       it "should update shared permissions for the campaign" do
@@ -400,12 +430,21 @@ describe LeadsController do
       end
 
       it "should get the data for leads sidebar when called from leads index" do
-        @lead = Factory(:lead, :id => 42, :user => @current_user)
+        @lead = Factory(:lead)
 
         request.env["HTTP_REFERER"] = "http://localhost/leads"
-        xhr :put, :update, :id => 42, :lead => { :first_name => "Billy" }
+        xhr :put, :update, :id => @lead.id, :lead => { :first_name => "Billy" }
         assigns[:lead_status_total].should_not be_nil
         assigns[:lead_status_total].should be_an_instance_of(Hash)
+      end
+
+      it "should reload lead campaign if called from campaign landing page" do
+        @campaign = Factory(:campaign)
+        @lead = Factory(:lead, :campaign => @campaign)
+      
+        request.env["HTTP_REFERER"] = "http://localhost/campaigns/#{@campaign.id}"
+        xhr :put, :update, :id => @lead.id, :lead => { :first_name => "Hello" }
+        assigns[:campaign].should == @campaign
       end
 
       describe "lead got deleted or otherwise unavailable" do
@@ -566,11 +605,12 @@ describe LeadsController do
   describe "responding to GET convert" do
 
     it "should should collect necessary data and render [convert] template" do
-      @lead = Factory(:lead, :user => @current_user, :campaign => nil)
+      @campaign = Factory(:campaign, :user => @current_user)
+      @lead = Factory(:lead, :user => @current_user, :campaign => @campaign, :source => "cold_call")
       @users = [ Factory(:user) ]
       @accounts = [ Factory(:account, :user => @current_user) ]
       @account = Account.new(:user => @current_user, :name => @lead.company, :access => "Lead")
-      @opportunity = Opportunity.new(:user => @current_user, :access => "Lead", :stage => "prospecting")
+      @opportunity = Opportunity.new(:user => @current_user, :access => "Lead", :stage => "prospecting", :campaign => @lead.campaign, :source => @lead.source)
 
       xhr :get, :convert, :id => @lead.id
       assigns[:lead].should == @lead
@@ -578,6 +618,7 @@ describe LeadsController do
       assigns[:accounts].should == @accounts
       assigns[:account].attributes.should == @account.attributes
       assigns[:opportunity].attributes.should == @opportunity.attributes
+      assigns[:opportunity].campaign.should == @opportunity.campaign
       response.should render_template("leads/convert")
     end
 
@@ -647,6 +688,7 @@ describe LeadsController do
       assigns[:accounts].should == [ @account ]
       assigns[:opportunity].should == @opportunity
       assigns[:contact].should == @contact
+      assigns[:stage].should be_instance_of(Array)
       response.should render_template("leads/promote")
     end
 
@@ -675,6 +717,39 @@ describe LeadsController do
       @opportunity.permissions.map(&:user_id).sort.should == [ 7, 8 ]
       @opportunity.permissions.map(&:asset_id).should == [ @opportunity.id, @opportunity.id ]
       @opportunity.permissions.map(&:asset_type).should == %w(Opportunity Opportunity)
+    end
+
+    it "should assign lead's campaign to the newly created opportunity" do
+      @campaign = Factory(:campaign)
+      @lead = Factory(:lead, :user => @current_user, :campaign => @campaign)
+
+      xhr :put, :promote, :id => @lead.id, :account => { :name => "Hello" }, :opportunity => { :name => "Hello", :campaign_id => @campaign.id }
+      assigns[:opportunity].campaign.should == @campaign
+    end
+
+    it "should assign lead's source to the newly created opportunity" do
+      @lead = Factory(:lead, :user => @current_user, :source => "cold_call")
+
+      xhr :put, :promote, :id => @lead.id, :account => { :name => "Hello" }, :opportunity => { :name => "Hello", :source => @lead.source }
+      assigns[:opportunity].source.should == @lead.source
+    end
+
+    it "should get the data for leads sidebar when called from leads index" do
+      @lead = Factory(:lead)
+      request.env["HTTP_REFERER"] = "http://localhost/leads"
+
+      xhr :put, :promote, :id => @lead.id, :account => { :name => "Hello" }, :opportunity => {}
+      assigns[:lead_status_total].should_not be_nil
+      assigns[:lead_status_total].should be_an_instance_of(Hash)
+    end
+
+    it "should reload lead campaign if called from campaign landing page" do
+      @campaign = Factory(:campaign)
+      @lead = Factory(:lead, :campaign => @campaign)
+      request.env["HTTP_REFERER"] = "http://localhost/campaigns/#{@campaign.id}"
+
+      xhr :put, :promote, :id => @lead.id, :account => { :name => "Hello" }, :opportunity => {}
+      assigns[:campaign].should == @campaign
     end
 
     it "on failure: should not change lead's status and still render [promote] template" do
@@ -755,6 +830,22 @@ describe LeadsController do
         response.should render_template("leads/reject")
       end
 
+      it "should get the data for leads sidebar when called from leads index" do
+        request.env["HTTP_REFERER"] = "http://localhost/leads"
+        xhr :put, :reject, :id => @lead.id
+        assigns[:lead_status_total].should_not be_nil
+        assigns[:lead_status_total].should be_an_instance_of(Hash)
+      end
+
+      it "should reload lead campaign if called from campaign landing page" do
+        @campaign = Factory(:campaign)
+        @lead = Factory(:lead, :campaign => @campaign)
+      
+        request.env["HTTP_REFERER"] = "http://localhost/campaigns/#{@campaign.id}"
+        xhr :put, :reject, :id => @lead.id
+        assigns[:campaign].should == @campaign
+      end
+
       describe "lead got deleted or otherwise unavailable" do
         it "should reload current page with the flash message if the lead got deleted" do
           @lead = Factory(:lead, :user => @current_user).destroy
@@ -802,7 +893,45 @@ describe LeadsController do
         end
       end
     end
+  end
 
+  # PUT /leads/1/attach
+  # PUT /leads/1/attach.xml                                                AJAX
+  #----------------------------------------------------------------------------
+  describe "responding to PUT attach" do
+    describe "tasks" do
+      before do
+        @model = Factory(:lead)
+        @attachment = Factory(:task, :asset => nil)
+      end
+      it_should_behave_like("attach")
+    end
+  end
+
+  # PUT /leads/1/attach
+  # PUT /leads/1/attach.xml                                                AJAX
+  #----------------------------------------------------------------------------
+  describe "responding to PUT attach" do
+    describe "tasks" do
+      before do
+        @model = Factory(:lead)
+        @attachment = Factory(:task, :asset => nil)
+      end
+      it_should_behave_like("attach")
+    end
+  end
+
+  # POST /leads/1/discard
+  # POST /leads/1/discard.xml                                              AJAX
+  #----------------------------------------------------------------------------
+  describe "responding to POST discard" do
+    before(:each) do
+      @attachment = Factory(:task, :assigned_to => @current_user)
+      @model = Factory(:lead)
+      @model.tasks << @attachment
+    end
+
+    it_should_behave_like("discard")
   end
 
   # POST /leads/auto_complete/query                                        AJAX
@@ -820,15 +949,15 @@ describe LeadsController do
   describe "responding to GET options" do
     it "should set current user preferences when showing options" do
       @per_page = Factory(:preference, :user => @current_user, :name => "leads_per_page", :value => Base64.encode64(Marshal.dump(42)))
-      @outline  = Factory(:preference, :user => @current_user, :name => "leads_outline",  :value => Base64.encode64(Marshal.dump("long")))
+      @outline  = Factory(:preference, :user => @current_user, :name => "leads_outline",  :value => Base64.encode64(Marshal.dump("option_long")))
       @sort_by  = Factory(:preference, :user => @current_user, :name => "leads_sort_by",  :value => Base64.encode64(Marshal.dump("leads.first_name ASC")))
-      @naming   = Factory(:preference, :user => @current_user, :name => "leads_naming",   :value => Base64.encode64(Marshal.dump("after")))
+      @naming   = Factory(:preference, :user => @current_user, :name => "leads_naming",   :value => Base64.encode64(Marshal.dump("option_after")))
 
       xhr :get, :options
       assigns[:per_page].should == 42
-      assigns[:outline].should  == "long"
-      assigns[:sort_by].should  == "first name"
-      assigns[:naming].should   == "after"
+      assigns[:outline].should  == "option_long"
+      assigns[:sort_by].should  == "leads.first_name ASC"
+      assigns[:naming].should   == "option_after"
     end
 
     it "should not assign instance variables when hiding options" do
@@ -844,7 +973,7 @@ describe LeadsController do
   #----------------------------------------------------------------------------
   describe "responding to POST redraw" do
     it "should save user selected lead preference" do
-      xhr :post, :redraw, :per_page => 42, :outline => "long", :sort_by => "first name", :naming => "after"
+      xhr :post, :redraw, :per_page => 42, :outline => "long", :sort_by => "first_name", :naming => "after"
       @current_user.preference[:leads_per_page].should == "42"
       @current_user.preference[:leads_outline].should  == "long"
       @current_user.preference[:leads_sort_by].should  == "leads.first_name ASC"
@@ -852,13 +981,13 @@ describe LeadsController do
     end
 
     it "should set similar options for Contacts" do
-      xhr :post, :redraw, :sort_by => "first name", :naming => "after"
+      xhr :post, :redraw, :sort_by => "first_name", :naming => "after"
       @current_user.pref[:contacts_sort_by].should == "contacts.first_name ASC"
       @current_user.pref[:contacts_naming].should == "after"
     end
 
     it "should reset current page to 1" do
-      xhr :post, :redraw, :per_page => 42, :outline => "long", :sort_by => "first name", :naming => "after"
+      xhr :post, :redraw, :per_page => 42, :outline => "long", :sort_by => "first_name", :naming => "after"
       session[:leads_current_page].should == 1
     end
 
@@ -868,7 +997,7 @@ describe LeadsController do
         Factory(:lead, :first_name => "Bobby", :user => @current_user)
       ]
 
-      xhr :post, :redraw, :per_page => 1, :sort_by => "first name"
+      xhr :post, :redraw, :per_page => 1, :sort_by => "first_name"
       assigns(:leads).should == [ @leads.first ]
       response.should render_template("leads/index")
     end

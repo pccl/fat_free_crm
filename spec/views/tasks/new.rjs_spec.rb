@@ -8,7 +8,7 @@ describe "/tasks/new.html.haml" do
     assigns[:task] = Factory.build(:task)
     assigns[:users] = [ @current_user ]
     assigns[:bucket] = Setting.task_bucket[1..-1] << [ "On Specific Date...", :specific_time ]
-    assigns[:category] = Setting.invert(:task_category)
+    assigns[:category] = Setting.unroll(:task_category)
   end
 
   it "should toggle empty message div if it exists" do
@@ -28,11 +28,20 @@ describe "/tasks/new.html.haml" do
       response.should include_text('crm.flip_form("create_task");')
     end
 
-    it "should call JavaScript functions to load Calendar popup" do
+    it "should call JavaScript functions to load Calendar popup without time selector" do
       params[:cancel] = nil
+      Setting.task_calendar_with_time = false
       render "tasks/new.js.rjs"
 
-      response.should include_text('crm.date_select_popup("task_calendar", "task_bucket")')
+      response.should include_text('crm.date_select_popup("task_calendar", "task_bucket", false)')
+    end
+
+    it "should call JavaScript functions to load Calendar popup with time selector" do
+      params[:cancel] = nil
+      Setting.task_calendar_with_time = true
+      render "tasks/new.js.rjs"
+
+      response.should include_text('crm.date_select_popup("task_calendar", "task_bucket", true)')
     end
   end
 

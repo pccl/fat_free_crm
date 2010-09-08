@@ -1,30 +1,55 @@
 %li[pending]{ highlightable(dom_id(pending, :tools)) }
   - unless pending.category.blank?
-    .strip{:class => pending.category}= Setting.task_category[pending.category.intern]
+    .strip{:class => pending.category}= t(pending.category)
   - else
-    .strip{:style => "color:white"} Other
-  %div
-    .tools{ invisible, :id => dom_id(pending, :tools) }
-      %small
-        = link_to_task_edit(pending, bucket) + " | "
-        = link_to_task_delete(pending, bucket) + "&nbsp;"
-    = check_box_tag dom_id(pending, :complete), 1, false, :onclick => link_to_task_complete(pending, bucket)
+    .strip.white #{t :other}
+
+  .tools{ invisible, :id => dom_id(pending, :tools) }
+    = link_to_task_edit(pending, bucket) + " | "
+    = link_to_discard(pending) + " | " if shown_on_landing_page?
+    = link_to_task_delete(pending, bucket)
+
+  = check_box_tag dom_id(pending, :complete), 1, false, :onclick => link_to_task_complete(pending, bucket)
+
+  .indentwide
     %label{ :id => dom_id(pending, :name) }
       - if pending.user.id != @current_user.id
-        == From #{link_to(pending.user.full_name, user_path(pending.user))}:
-      = pending.name
+        = t(:task_from, link_to(pending.user.full_name, user_path(pending.user))) << ':'
+      = auto_link h(pending.name)
       - if pending.asset_id?
-        == (re: #{link_to(pending.asset.name, polymorphic_url(pending.asset))})
+        == #{t :related} #{link_to(h(pending.asset.name), polymorphic_url(pending.asset))}
       &ndash;
     %tt
       - if pending.bucket == "due_asap"
-        %span.urgent due now.
+        %span.urgent= t(:task_due_now)
+
       - elsif pending.bucket == "due_later"
-        due sometime soon.
-      - elsif pending.due_at < Date.today
-        %span.warn= distance_of_time_in_words(pending.due_at, Date.today) << " late, was due on #{pending.due_at.strftime('%b %e')}"
-      - elsif pending.due_at > Date.today
-        = "due in " << distance_of_time_in_words(Time.now, pending.due_at.end_of_day)
+        = t(:task_due_later)
+
       - else
-        %span.cool due today.
-      
+        - if pending.at_specific_time?
+          - if pending.due_at < Time.now
+            %span.warn
+              = distance_of_time_in_words(pending.due_at, Time.now)
+              = t(:task_overdue) 
+              = l(pending.due_at.localtime, :format => :mmddhhss)
+          - else
+            = t(:task_due_in, distance_of_time_in_words(Time.now, pending.due_at))
+            = '(' << l(pending.due_at.localtime, :format => :mmddhhss) << ')'
+
+        - else
+          - if pending.due_at < Date.today
+            %span.warn
+              = distance_of_time_in_words(pending.due_at, Time.now)
+              = t(:task_overdue) 
+              = pending.due_at.localtime.strftime('%b %e')
+          - elsif pending.due_at > Date.today
+            = t(:task_due_in, distance_of_time_in_words(Time.now, pending.due_at.localtime.end_of_day))
+            = ' (' << pending.due_at.localtime.end_of_day.strftime('%b %e') << ')'
+          - else
+            %span.cool= t(:task_due_today)
+
+    - unless pending.background_info.blank?
+      %div
+        %dt= h(pending.background_info)
+    

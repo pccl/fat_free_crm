@@ -1,30 +1,30 @@
 # == Schema Information
-# Schema version: 23
+# Schema version: 27
 #
 # Table name: tasks
 #
-#  id           :integer(4)      not null, primary key
-#  user_id      :integer(4)
-#  assigned_to  :integer(4)
-#  completed_by :integer(4)
-#  name         :string(255)     default(""), not null
-#  asset_id     :integer(4)
-#  asset_type   :string(255)
-#  priority     :string(32)
-#  category     :string(32)
-#  bucket       :string(32)
-#  due_at       :datetime
-#  completed_at :datetime
-#  deleted_at   :datetime
-#  created_at   :datetime
-#  updated_at   :datetime
+#  id              :integer(4)      not null, primary key
+#  user_id         :integer(4)
+#  assigned_to     :integer(4)
+#  completed_by    :integer(4)
+#  name            :string(255)     default(""), not null
+#  asset_id        :integer(4)
+#  asset_type      :string(255)
+#  priority        :string(32)
+#  category        :string(32)
+#  bucket          :string(32)
+#  due_at          :datetime
+#  completed_at    :datetime
+#  deleted_at      :datetime
+#  created_at      :datetime
+#  updated_at      :datetime
+#  background_info :string(255)
 #
-
 <%
   require "faker"
   puts "Loading tasks..."
 
-  category = %w(call email folowup lunch meeting money presentation trip) << ""
+  category = %w(call email follow_up lunch meeting money presentation trip) << ""
 
   for i in (1 .. 250) do
     case rand(12)
@@ -53,8 +53,10 @@ task<%= i %>:
   name         : <%= Faker::Lorem::sentence(rand(2) + 2).sub(".", "") %>
   asset_id     : <%= asset %>
   asset_type   : <%= %w(Account Campaign Contact Lead Opportunity).rand if asset %>
-  category     : <%= category[rand(category.size)] %>
+  category     : <%= category.rand %>
   bucket       : <%= bucket %>
+  background_info :
+# background_info : <%= Faker::Lorem.paragraph[0,255] %>
   due_at       : <%= due_at %>
   completed_at : <%= completed_by ? Date.today - rand(5).days : "" %>
   created_at   : <%= created_at = (rand(60) + 2).days.ago + rand(600).minutes; created_at.to_s(:db) %>

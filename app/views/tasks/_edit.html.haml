@@ -6,10 +6,11 @@
     = hidden_field_tag "task[asset_type]", "#{@asset.class if @asset}"
     = render :partial => "tasks/top_section", :locals => { :f => f }
     .buttonbar
-      = f.submit "Save Task"
-      or
+      = f.submit t :save_task
+      == #{t :or}
       = link_to_cancel edit_task_path(@task)
-      or move to
+      == #{t :or} #{t :move_to}
       - [ "ASAP", "Today", "Tomorrow", "This week", "Next week", "Later" ].each do |day|
-        = link_to(day, "#", :onclick => %Q/crm.reschedule_task(#{@task.id}, "due_#{day.downcase.sub(" ", "_")}")/)
+        - due_day = "due_#{day.snakecase}"
+        = link_to(t(due_day.to_sym), "#", :onclick => %Q/crm.reschedule_task(#{@task.id}, "#{due_day}")/)
         = " | " if day != "Later"

@@ -1,5 +1,5 @@
 # Fat Free CRM
-# Copyright (C) 2008-2009 by Michael Dvorkin
+# Copyright (C) 2008-2010 by Michael Dvorkin
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -18,7 +18,7 @@
 class UsersController < ApplicationController
 
   before_filter :require_no_user, :only => [ :new, :create ]
-  before_filter :require_user, :only => [ :show ]
+  before_filter :require_user, :only => [ :show, :redraw ]
   before_filter :set_current_tab, :only => [ :show ] # Don't hightlight any tabs.
   before_filter :require_and_assign_user, :except => [ :new, :create, :show ]
 
@@ -70,10 +70,10 @@ class UsersController < ApplicationController
     @user = User.new(params[:user])
     if @user.save
       if Setting.user_signup == :needs_approval
-        flash[:notice] = "Your account has been created and is awating approval by the system administrator."
+        flash[:notice] = t(:msg_account_created)
         redirect_to login_url
       else
-        flash[:notice] = "Successfull signup, welcome to Fat Free CRM!"
+        flash[:notice] = t(:msg_successful_signup)
         redirect_back_or_default profile_url
       end
     else
@@ -123,7 +123,7 @@ class UsersController < ApplicationController
         @user.avatar = Avatar.new(params[:avatar].merge(:entity => @user))
         unless @user.save && @user.avatar.errors.blank?
           @user.avatar.errors.clear
-          @user.avatar.errors.add(:image, "^Could't upload or resize the image file you specified.")
+          @user.avatar.errors.add(:image, t(:msg_bad_image_file))
         end
       end
       responds_to_parent { render }
@@ -144,14 +144,21 @@ class UsersController < ApplicationController
     if @user.valid_password?(params[:current_password], true) || @user.password_hash.blank?
       unless params[:user][:password].blank?
         @user.update_attributes(params[:user])
-        flash[:notice] = "Your password has been changed."
+        flash[:notice] = t(:msg_password_changed)
       else
-        flash[:notice] = "Your password hasn't been changed."
+        flash[:notice] = t(:msg_password_not_changed)
       end
     else
-      @user.errors.add(:current_password, "^Please specify valid current password")
+      @user.errors.add(:current_password, t(:msg_invalid_password))
     end
     # <-- render change_password.js.rjs
+  end
+
+  # POST /users/1/redraw                                                   AJAX
+  #----------------------------------------------------------------------------
+  def redraw
+    @current_user.preference[:locale] = params[:locale]
+    render(:update) { |page| page.redirect_to user_path(@current_user) }
   end
 
   private

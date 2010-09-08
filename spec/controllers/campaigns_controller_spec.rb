@@ -32,7 +32,7 @@ describe CampaignsController do
       @campaigns = [ Factory(:campaign, :user => @current_user) ]
 
       get :index
-      (assigns[:campaign_status_total].keys - (@status.keys << :all << :other)).should == []
+      (assigns[:campaign_status_total].keys - (@status << :all << :other)).should == []
     end
 
     it "should filter out campaigns by status" do
@@ -93,7 +93,7 @@ describe CampaignsController do
     describe "with mime type of HTML" do
       before(:each) do
         @campaign = Factory(:campaign, :id => 42, :user => @current_user)
-        @stage = Setting.as_hash(:opportunity_stage)
+        @stage = Setting.unroll(:opportunity_stage)
         @comment = Comment.new
       end
 
@@ -482,6 +482,95 @@ describe CampaignsController do
     end
   end
 
+  # PUT /campaigns/1/attach
+  # PUT /campaigns/1/attach.xml                                            AJAX
+  #----------------------------------------------------------------------------
+  describe "responding to PUT attach" do
+    describe "tasks" do
+      before do
+        @model = Factory(:campaign)
+        @attachment = Factory(:task, :asset => nil)
+      end
+      it_should_behave_like("attach")
+    end
+
+    describe "leads" do
+      before do
+        @model = Factory(:campaign)
+        @attachment = Factory(:lead, :campaign => nil)
+      end
+      it_should_behave_like("attach")
+    end
+
+    describe "opportunities" do
+      before do
+        @model = Factory(:campaign)
+        @attachment = Factory(:opportunity, :campaign => nil)
+      end
+      it_should_behave_like("attach")
+    end
+  end
+
+  # PUT /campaigns/1/attach
+  # PUT /campaigns/1/attach.xml                                            AJAX
+  #----------------------------------------------------------------------------
+  describe "responding to PUT attach" do
+    describe "tasks" do
+      before do
+        @model = Factory(:campaign)
+        @attachment = Factory(:task, :asset => nil)
+      end
+      it_should_behave_like("attach")
+    end
+
+    describe "leads" do
+      before do
+        @model = Factory(:campaign)
+        @attachment = Factory(:lead, :campaign => nil)
+      end
+      it_should_behave_like("attach")
+    end
+
+    describe "opportunities" do
+      before do
+        @model = Factory(:campaign)
+        @attachment = Factory(:opportunity, :campaign => nil)
+      end
+      it_should_behave_like("attach")
+    end
+  end
+
+  # POST /campaigns/1/discard
+  # POST /campaigns/1/discard.xml                                          AJAX
+  #----------------------------------------------------------------------------
+  describe "responding to POST discard" do
+    describe "tasks" do
+      before do
+        @model = Factory(:campaign)
+        @attachment = Factory(:task, :asset => @model)
+      end
+      it_should_behave_like("discard")
+    end
+
+    describe "leads" do
+      before do
+        @attachment = Factory(:lead)
+        @model = Factory(:campaign)
+        @model.leads << @attachment
+      end
+      it_should_behave_like("discard")
+    end
+
+    describe "opportunities" do
+      before do
+        @attachment = Factory(:opportunity)
+        @model = Factory(:campaign)
+        @model.opportunities << @attachment
+      end
+      it_should_behave_like("discard")
+    end
+  end
+
   # POST /campaigns/auto_complete/query                                    AJAX
   #----------------------------------------------------------------------------
   describe "responding to POST auto_complete" do
@@ -497,13 +586,13 @@ describe CampaignsController do
   describe "responding to GET options" do
     it "should set current user preferences when showing options" do
       @per_page = Factory(:preference, :user => @current_user, :name => "campaigns_per_page", :value => Base64.encode64(Marshal.dump(42)))
-      @outline  = Factory(:preference, :user => @current_user, :name => "campaigns_outline",  :value => Base64.encode64(Marshal.dump("long")))
+      @outline  = Factory(:preference, :user => @current_user, :name => "campaigns_outline",  :value => Base64.encode64(Marshal.dump("option_long")))
       @sort_by  = Factory(:preference, :user => @current_user, :name => "campaigns_sort_by",  :value => Base64.encode64(Marshal.dump("campaigns.name ASC")))
 
       xhr :get, :options
       assigns[:per_page].should == 42
-      assigns[:outline].should  == "long"
-      assigns[:sort_by].should  == "name"
+      assigns[:outline].should  == "option_long"
+      assigns[:sort_by].should  == "campaigns.name ASC"
     end
 
     it "should not assign instance variables when hiding options" do

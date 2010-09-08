@@ -1,5 +1,5 @@
 # Fat Free CRM
-# Copyright (C) 2008-2009 by Michael Dvorkin
+# Copyright (C) 2008-2010 by Michael Dvorkin
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -16,7 +16,7 @@
 #------------------------------------------------------------------------------
 
 # == Schema Information
-# Schema version: 23
+# Schema version: 27
 #
 # Table name: comments
 #
@@ -36,10 +36,13 @@ class Comment < ActiveRecord::Base
   has_many    :activities, :as => :subject, :order => 'created_at DESC'
 
   default_scope :order => "created_at DESC"
-  named_scope :created_by, lambda { |user| { :conditions => "user_id = #{user.id}" } }
+  named_scope :created_by, lambda { |user| { :conditions => ["user_id = ? ", user.id ] } }
 
-  validates_presence_of :user_id, :commentable_id, :commentable_type, :comment
+  validates_presence_of :user, :commentable, :comment
   after_create :log_activity
+
+  def expanded?;  self.state == "Expanded";  end
+  def collapsed?; self.state == "Collapsed"; end
 
   private
   def log_activity

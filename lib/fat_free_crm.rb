@@ -1,5 +1,5 @@
 # Fat Free CRM
-# Copyright (C) 2008-2009 by Michael Dvorkin
+# Copyright (C) 2008-2010 by Michael Dvorkin
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -15,13 +15,28 @@
 # along with this program.  If not, see <http:#www.gnu.org/licenses/>.
 #------------------------------------------------------------------------------
 
+if RUBY_VERSION.start_with?("1.9") && ActiveRecord::Base.connection.adapter_name.downcase == "mysql"
+  require "fat_free_crm/mysql_utf8.rb"
+end
+
 require "fat_free_crm/version"
 require "fat_free_crm/core_ext"
+require "fat_free_crm/exceptions"
+require "fat_free_crm/i18n"
 require "fat_free_crm/permissions"
+require "fat_free_crm/sortable"
 require "fat_free_crm/tabs"
 require "fat_free_crm/callback"
 require "fat_free_crm/plugin"
+require "fat_free_crm/plugin_views"
 
-ActionView::Base.send(:include, FatFreeCRM::Callback::Helper)
+      ActionView::Base.send(:include, FatFreeCRM::I18n)
+ActionController::Base.send(:include, FatFreeCRM::I18n)
+
+      ActionView::Base.send(:include, FatFreeCRM::Callback::Helper)
 ActionController::Base.send(:include, FatFreeCRM::Callback::Helper)
-ActiveRecord::Base.send(:include, FatFreeCRM::Permissions)
+
+    ActiveRecord::Base.send(:include, FatFreeCRM::Permissions)
+    ActiveRecord::Base.send(:include, FatFreeCRM::Sortable)
+
+ Rails::Plugin::Loader.send(:include, FatFreeCRM::PrependEngineViews)

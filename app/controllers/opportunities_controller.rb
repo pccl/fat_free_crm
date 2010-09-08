@@ -1,5 +1,5 @@
 # Fat Free CRM
-# Copyright (C) 2008-2009 by Michael Dvorkin
+# Copyright (C) 2008-2010 by Michael Dvorkin
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -18,8 +18,10 @@
 class OpportunitiesController < ApplicationController
   before_filter :require_user
   before_filter :set_current_tab, :only => [ :index, :show ]
-  before_filter :load_settings, :except => [ :new, :destroy ]
+  before_filter :load_settings
   before_filter :get_data_for_sidebar, :only => :index
+  before_filter :attach, :only => :attach
+  before_filter :discard, :only => :discard
   before_filter :auto_complete, :only => :auto_complete
   after_filter  :update_recently_viewed, :only => :show
 
@@ -43,6 +45,8 @@ class OpportunitiesController < ApplicationController
     @opportunity = Opportunity.my(@current_user).find(params[:id])
     @comment = Comment.new
 
+    @timeline = Timeline.find(@opportunity)
+    
     respond_to do |format|
       format.html # show.html.erb
       format.xml  { render :xml => @opportunity }
@@ -56,7 +60,7 @@ class OpportunitiesController < ApplicationController
   # GET /opportunities/new.xml                                             AJAX
   #----------------------------------------------------------------------------
   def new
-    @opportunity = Opportunity.new(:user => @current_user, :stage => "prospecting")
+    @opportunity = Opportunity.new(:user => @current_user, :stage => "prospecting", :access => Setting.default_access)
     @users       = User.except(@current_user).all
     @account     = Account.new(:user => @current_user)
     @accounts    = Account.my(@current_user).all(:order => "name")
@@ -101,8 +105,8 @@ class OpportunitiesController < ApplicationController
         if called_from_index_page?
           @opportunities = get_opportunities
           get_data_for_sidebar
-        elsif @opportunity.campaign
-          @campaign = @opportunity.campaign.reload # Reload the campaign to refresh its summary.
+        else
+          get_data_for_sidebar(:campaign)
         end
         format.js   # create.js.rjs
         format.xml  { render :xml => @opportunity, :status => :created, :location => @opportunity }
@@ -134,7 +138,11 @@ class OpportunitiesController < ApplicationController
 
     respond_to do |format|
       if @opportunity.update_with_account_and_permissions(params)
-        get_data_for_sidebar if called_from_index_page?
+        if called_from_index_page?
+          get_data_for_sidebar
+        else
+          get_data_for_sidebar(:campaign)
+        end
         format.js
         format.xml  { head :ok }
       else
@@ -171,6 +179,20 @@ class OpportunitiesController < ApplicationController
     respond_to_not_found(:html, :js, :xml)
   end
 
+  # PUT /opportunities/1/attach
+  # PUT /opportunities/1/attach.xml                                        AJAX
+  #----------------------------------------------------------------------------
+  # Handled by before_filter :attach, :only => :attach
+
+  # POST /opportunities/1/discard
+  # POST /opportunities/1/discard.xml                                      AJAX
+  #----------------------------------------------------------------------------
+  # Handled by before_filter :discard, :only => :discard
+
+  # POST /opportunities/auto_complete/query                                AJAX
+  #----------------------------------------------------------------------------
+  # Handled by before_filter :auto_complete, :only => :auto_complete
+
   # GET /campaigns/search/query                                           AJAX
   #----------------------------------------------------------------------------
   def search
@@ -182,18 +204,13 @@ class OpportunitiesController < ApplicationController
     end
   end
 
-  # POST /opportunities/auto_complete/query                                AJAX
-  #----------------------------------------------------------------------------
-  # Handled by before_filter :auto_complete, :only => :auto_complete
-
   # GET /opportunities/options                                             AJAX
   #----------------------------------------------------------------------------
   def options
-    unless params[:cancel] == "true"
+    unless params[:cancel].true?
       @per_page = @current_user.pref[:opportunities_per_page] || Opportunity.per_page
       @outline  = @current_user.pref[:opportunities_outline]  || Opportunity.outline
       @sort_by  = @current_user.pref[:opportunities_sort_by]  || Opportunity.sort_by
-      @sort_by  = Opportunity::SORT_BY.invert[@sort_by]
     end
   end
 
@@ -202,7 +219,7 @@ class OpportunitiesController < ApplicationController
   def redraw
     @current_user.pref[:opportunities_per_page] = params[:per_page] if params[:per_page]
     @current_user.pref[:opportunities_outline]  = params[:outline]  if params[:outline]
-    @current_user.pref[:opportunities_sort_by]  = Opportunity::SORT_BY[params[:sort_by]] if params[:sort_by]
+    @current_user.pref[:opportunities_sort_by]  = Opportunity::sort_by_map[params[:sort_by]] if params[:sort_by]
     @opportunities = get_opportunities(:page => 1)
     render :action => :index
   end
@@ -260,25 +277,28 @@ class OpportunitiesController < ApplicationController
       # At this point render destroy.js.rjs
     else
       self.current_page = 1
-      flash[:notice] = "#{@opportunity.name} has beed deleted."
+      flash[:notice] = t(:msg_asset_deleted, @opportunity.name)
       redirect_to(opportunities_path)
     end
   end
 
   #----------------------------------------------------------------------------
-  def get_data_for_sidebar
-    load_settings
-    @opportunity_stage_total = { :all => Opportunity.my(@current_user).count, :other => 0 }
-    @stage.keys.each do |key|
-      @opportunity_stage_total[key] = Opportunity.my(@current_user).count(:conditions => [ "stage=?", key.to_s ])
-      @opportunity_stage_total[:other] -= @opportunity_stage_total[key]
+  def get_data_for_sidebar(related = false)
+    if related
+      instance_variable_set("@#{related}", @opportunity.send(related)) if called_from_landing_page?(related.to_s.pluralize)
+    else
+      @opportunity_stage_total = { :all => Opportunity.my(@current_user).count, :other => 0 }
+      @stage.each do |value, key|
+        @opportunity_stage_total[key] = Opportunity.my(@current_user).count(:conditions => [ "stage=?", key.to_s ])
+        @opportunity_stage_total[:other] -= @opportunity_stage_total[key]
+      end
+      @opportunity_stage_total[:other] += @opportunity_stage_total[:all]
     end
-    @opportunity_stage_total[:other] += @opportunity_stage_total[:all]
   end
 
   #----------------------------------------------------------------------------
   def load_settings
-    @stage = Setting.as_hash(:opportunity_stage)
+    @stage = Setting.unroll(:opportunity_stage)
   end
 
 end

@@ -1,5 +1,5 @@
 // Fat Free CRM
-// Copyright (C) 2008-2009 by Michael Dvorkin
+// Copyright (C) 2008-2010 by Michael Dvorkin
 // 
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Affero General Public License as published by
@@ -53,7 +53,7 @@
 .subtitle_tools
   :font-size 11px
   :float right
-   
+
 .radio_box
   :line-height 20px
 
@@ -63,10 +63,13 @@
 
 .check_box
   :line-height 20px
-
+  
   input
     :position relative
     :top -3px
+  
+  label
+    :font-size 11px
 
 // Main area (page and form).
 //------------------------------------------------------------------------------
@@ -81,7 +84,9 @@
   :padding 20px
   :width 400px 
   :-moz-border-radius 6px
+  :-moz-box-shadow 5px 5px 15px #bbb, -5px 0px 15px #bbb
   :-webkit-border-radius 6px
+  :-webkit-box-shadow 5px 5px 15px #bbb, -5px 0px 15px #bbb
 
   input[type="text"], input[type="password"]
     :font-size 16px
@@ -98,7 +103,9 @@
   :background white
   :padding 8px 15px 15px 15px
   :-moz-border-radius 4px
+  :-moz-box-shadow 2px 2px 8px #bbb, -2px 0px 8px #bbb
   :-webkit-border-radius 4px
+  :-webkit-box-shadow 2px 2px 8px #bbb, -2px 0px 8px #bbb
   
 .sidebar
   :color #3f3f3f
@@ -114,8 +121,12 @@
     :height 30px
 
 .tools
+  :font-size 10px
   :float right
   :padding 0px 0px 0px 4px
+
+  &#comment_new_tools
+    :margin 8px 0px 0px 0px
 
 .label
   :color #3f3f3f
@@ -185,6 +196,12 @@
 .black
   :color black
 
+.white
+  :color white !important
+
+.grayed
+  :color silver !important
+
 .strip
   :background gainsboro
   :color black
@@ -201,6 +218,23 @@
     :top-left-radius 7px
     :bottom-left-radius 7px
 
+// Indentation classes:
+//   - indent: for use with strip (regular indentation).
+//   - indentslim: for use with avatar and no strip (Contacts).
+//   - indentwide: for use with strip + checkbox (Tasks).
+//   - indentfull: for use with strip + avatar (Admin/Users).
+.indent
+  :margin-left 88px
+
+.indentslim
+  :margin-left 38px
+
+.indentwide
+  :margin-left 106px
+
+.indentfull
+  :margin-left 126px
+
 .bucket
   :margin 0px 0px 10px 0px
 
@@ -210,9 +244,11 @@
 
 .comment
   :background #f2f2f2
+  :border-bottom 1px gainsboro solid
   :margin 2px 0px 0px 0px
   :overflow hidden
   :padding 4px
+  :list-style none
   //  :-moz-border-radius
   //    :bottomleft 8px
   //    :bottomright 8px
@@ -220,22 +256,26 @@
   //    :bottom-left-radius 8px
   //    :bottom-right-radius 8px
 
+  &#comment_new
+    :margin 3px 0px 0px 0px
+
   input[type=text]
     :border 1px #cfcfcf solid
     :color grey
     :font-size 11px
+    :margin 3px 0px 0px 0px
     :padding 3px
     :width 500px
   textarea
     :font-size 11px
     :height 110px
+    :margin 3px 0px 0px 0px
     :padding 3px
     :width 500px
 
   .gravatar
-    :background #f2f2f2
     :float left
-    :padding 0px 10px 5px 0px
+    :margin 3px 10px 3px 3px
 
   .body
     :display inline
@@ -248,6 +288,41 @@
   dt
     :padding 0px
     :margin -10px 0px 0px 36px
+    p
+      :margin 10px 0px 0px 0px
+
+// Avoid collision with .email CSS class which is used to display Task category strip.
+.mail
+  :background #f2f2f2
+  :border-bottom 1px gainsboro solid
+  :margin 2px 0px 0px 0px
+  :overflow hidden
+  :padding 4px
+  :list-style none
+
+  .gravatar
+    :float left
+    :margin 3px 10px 3px 3px
+
+  .subject
+    :color black
+
+  .body
+    :display inline
+    :font-size 11px
+
+  tt
+    :font-size 10px
+    :color #666666
+
+  dt
+    :padding 0px
+    :margin -10px 0px 0px 36px
+    p
+      :margin 10px 0px 0px 0px
+
+.toggle
+  :font-weight normal
 
 #paginate
   :float right
@@ -321,7 +396,7 @@
     dt
       :color #3f3f3f
       :font-size 11px
-      :padding 2px 0px 0px 88px
+      :padding 2px 0px 0px 0px
 
     dt a:link, dt a:visited
       :color #3f3f3f
@@ -338,10 +413,12 @@
 //------------------------------------------------------------------------------
 .filters, .panel
   :background snow
-  :margin 0px 0px 10px 0px
+  :margin 0px 0px 12px 0px
   :padding 6px 8px 6px 8px
   :-moz-border-radius 4px
   :-webkit-border-radius 4px
+  :-moz-box-shadow 2px 2px 8px #bbb, -2px 0px 8px #bbb
+  :-webkit-box-shadow 2px 2px 8px #bbb, -2px 0px 8px #bbb
 
 .filters
   h4
@@ -379,12 +456,15 @@
       :weight bold
     :margin 4px 0px 2px 0px
     :padding 2px 0px 2px 0px
-
+    
   &#recently
     :background floralwhite
 
   &#summary
     :background oldlace
+
+    p
+      :margin 4px 0px 4px 0px
 
 .selector
   :color black

@@ -1,5 +1,5 @@
 # Fat Free CRM
-# Copyright (C) 2008-2009 by Michael Dvorkin
+# Copyright (C) 2008-2010 by Michael Dvorkin
 # 
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -17,12 +17,12 @@
 
 module FatFreeCRM
   class Version
-    MAJOR = 0
-    MINOR = 9
-    TINY  = "8a"
+    RELEASE = 0
+    MAJOR   = 10
+    MINOR   = 1
 
     def self.to_a
-      [ MAJOR, MINOR, TINY ]
+      [ RELEASE, MAJOR, MINOR ]
     end
     
     def self.to_s
