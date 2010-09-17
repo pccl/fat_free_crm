@@ -64,6 +64,12 @@ en-US:
   money: Money
   presentation: Presentation
   trip: Trip
+  assistance: Assistance
+  demo: Demo
+  document: Document
+  development: Development
+  administrative: Administrative
+  
 
   overdue: Overdue
   due_asap: As Soon As Possible

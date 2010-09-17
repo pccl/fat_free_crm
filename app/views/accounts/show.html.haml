@@ -8,19 +8,14 @@
 
 %div#edit_account{ hidden }
 
--#-----------------------------------------------------------------------------
 %br
-= inline :create_task, new_task_path, { :class => "subtitle_tools", :related => dom_id(@account) }
-.subtitle#create_task_title Tasks
-.remote#create_task{ hidden }
+
+= section(@account, :tasks)
+.log#tasks
+  = render :partial => "common/tasks"
 
 = render :partial => "comments/new", :locals => { :commentable => @account }
 = render :partial => "common/timeline", :collection => @timeline
-
-= section(@account, :tasks)
-
-.log#tasks
-  = render :partial => "common/tasks"
 
 = section(@account, :contacts)
 .list#contacts
@@ -34,5 +29,5 @@
 
 = hook(:show_account_bottom, self)
 
-= render :partial => "common/new_comment", :locals => { :commentable => @account }
-= render :partial => "common/comment", :collection => @account.comments
+-#= render :partial => "common/new_comment", :locals => { :commentable => @account }
+-#= render :partial => "common/comment", :collection => @account.comments

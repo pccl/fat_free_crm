@@ -204,21 +204,25 @@ task_category:
   - :call
   - :email
   - :follow_up
-  - :lunch
+  - :demo
   - :meeting
-  - :money
-  - :presentation
-  - :trip
+  - :document
+  - :development
+  - :administrative
+  - :other
+  - :assistance
 
 task_category_color:
-  :call         : lavender
-  :email        : paleturquoise
-  :follow_up    : mistyrose
-  :lunch        : wheat
-  :meeting      : thistle
-  :money        : lightgreen
-  :presentation : aquamarine
-  :trip         : skyblue
+  :call : lavender
+  :email : paleturquoise
+  :follow_up : mistyrose
+  :demo : wheat
+  :meeting : thistle
+  :assistance : lightgreen
+  :document : aquamarine
+  :development : goldenrod
+  :administrative: skyblue
+  :other : grey
 
 task_bucket:
   - :overdue

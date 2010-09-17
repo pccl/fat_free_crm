@@ -2,7 +2,16 @@ The PCCL custom fork of Fat Free CRM includes several alterations
 useful to us, which we do not wish to push back into the main
 development branch. 
 
-To date, the customisations include the following:
+Changes: 17/09/10
+-----------------
+* config/settings.yml - custom task 'support' now called :assistance
+* app/views/accounts/show.html.haml - tasks moved above comments
+* config/locales/en-US_fat_free_crm.yml - added lang for custom tasks (no other lang updated)
+* "VAT no." reverted back to "Phone (toll-free)" (For now)
+
+-----------------------------------------------------------------------
+
+Changes: Nov 2009
 
 * config/settings.yml - modified the task_categories
 * config/environment.rb - configured action_mailer.default_url_options
@@ -11,4 +20,4 @@ To date, the customisations include the following:
 -----------------------------------------------------------------------
 
 Please maintain this list as further customisations are added.
-Drew Neil
+PCCL
